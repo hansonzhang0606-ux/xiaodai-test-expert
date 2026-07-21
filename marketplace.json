@@ -1,0 +1,20 @@
+{
+  "name": "xiaodai-test-expert-marketplace",
+  "displayName": {
+    "zh": "效贷测试专家市场",
+    "en": "Xiaodai Testing Expert Marketplace"
+  },
+  "description": {
+    "zh": "效贷业务线功能测试专家私有市场，提供测试用例全流程生成与时间节省追踪能力。",
+    "en": "Private marketplace for Xiaodai business line functional testing expert."
+  },
+  "version": "1.0.0",
+  "plugins": [
+    {
+      "id": "xiaodai-testing-expert",
+      "name": "效贷测试专家",
+      "path": "plugins/xiaodai-testing-expert",
+      "version": "1.3.2"
+    }
+  ]
+}
