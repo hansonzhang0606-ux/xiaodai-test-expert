@@ -1,4 +1,4 @@
-# 效贷测试专家 - 安装后注册脚本
+﻿# 效贷测试专家 - 安装后注册脚本
 # 用途：将已安装的 xiaodai-testing-expert 套件注册为 WorkBuddy 专家
 # 使用方法：双击 register_expert.bat，或右键本文件 →"使用 PowerShell 运行"
 # 前提：已通过团队市场安装 xiaodai-test-expert 套件
