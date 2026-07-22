@@ -22,6 +22,25 @@
 
 > **不要混淆两个入口**：本地目录整理不做网络请求；Confluence 提取不扫描本地文件。
 
+**步骤① 双入口流程**：
+
+```
+步骤① 双入口：
+├─ 本地目录整理：document_consolidate.md
+│   输入：D:\...\需求目录\
+│   输出：{目录名}_整理版_v{version}.md
+│
+└─ Confluence 提取：confluence_extract.md（新增）
+    输入：https://.../viewpage.action?pageId=xxx 帮我提取这个文档内容
+    输出：{页面标题}_整理版_v1.0.md
+            │
+            ▼
+    用户说「评审这个需求」
+            │
+            ▼
+    步骤② 需求评审：requirement_review.md（已兼容两种来源）
+```
+
 ---
 
 ## ⛔ 禁止 AI 擅自做决定（强制按流程规范执行）

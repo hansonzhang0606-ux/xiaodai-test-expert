@@ -21,6 +21,11 @@ members:
     employee_id: ""
     active: true
 
+  - name: "张云星"
+    role: "功能测试"
+    employee_id: ""
+    active: true
+
 # 花名册维护说明：
 # 1. 新增人员：在 members 下添加新条目，name 和 role 必填
 # 2. 人员离职：将 active 设为 false，不要直接删除（保留历史数据可追溯）
