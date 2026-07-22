@@ -1,0 +1,194 @@
+#!/bin/bash
+
+# 效贷测试专家 - Mac 安装后注册脚本
+# 用途：将已安装的 xiaodai-testing-expert 套件注册为 WorkBuddy 专家
+# 使用方法：chmod +x register_expert.sh && ./register_expert.sh
+# 前提：已通过团队市场安装 xiaodai-test-expert 套件
+
+set -e
+
+# 颜色定义
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+WHITE='\033[0;37m'
+NC='\033[0m' # No Color
+
+expert_id="xiaodai-testing-expert"
+
+print_header() {
+    echo ""
+    echo -e "${CYAN}=========================================${NC}"
+    echo -e "${CYAN}  效贷测试专家 - 安装后注册脚本${NC}"
+    echo -e "${CYAN}=========================================${NC}"
+    echo ""
+}
+
+print_header
+
+# 1. 定位 WorkBuddy 主目录
+wb_home="${HOME}/.workbuddy"
+if [ ! -d "$wb_home" ]; then
+    echo -e "${RED}[X] 未找到 WorkBuddy 目录: $wb_home${NC}"
+    echo -e "${YELLOW}请确认 WorkBuddy 已安装并至少打开过一次。${NC}"
+    read -p "按回车键退出"
+    exit 1
+fi
+echo -e "${GREEN}[1/4] WorkBuddy 目录: $wb_home${NC}"
+
+# 2. 获取用户 ID
+user_id=""
+sessions_path="${wb_home}/app/sessions.json"
+
+if [ -z "$user_id" ] && [ -f "$sessions_path" ]; then
+    user_id=$(python3 -c "
+import json, sys
+try:
+    with open('$sessions_path', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    sessions = data.get('sessions', [])
+    for s in sessions:
+        if s.get('userId'):
+            print(s['userId'])
+            sys.exit(0)
+except Exception as e:
+    sys.exit(1)
+" 2>/dev/null || true)
+fi
+
+# 方式 B：从 experts/custom 目录中查找已有用户目录
+if [ -z "$user_id" ]; then
+    custom_base="${wb_home}/experts/custom"
+    if [ -d "$custom_base" ]; then
+        user_dir=$(find "$custom_base" -maxdepth 1 -type d | tail -n 1)
+        if [ "$user_dir" != "$custom_base" ] && [ -n "$user_dir" ]; then
+            user_id=$(basename "$user_dir")
+        fi
+    fi
+fi
+
+if [ -z "$user_id" ]; then
+    echo -e "${RED}[X] 无法自动获取用户 ID。${NC}"
+    echo ""
+    echo -e "${YELLOW}请手动执行以下步骤：${NC}"
+    echo -e "${WHITE}  1. 在 WorkBuddy 中随便发起一个对话（新建会话）${NC}"
+    echo -e "${WHITE}  2. 完全退出 WorkBuddy${NC}"
+    echo -e "${WHITE}  3. 重新运行本脚本${NC}"
+    read -p "按回车键退出"
+    exit 1
+fi
+echo -e "${GREEN}[2/4] 用户 ID: $user_id${NC}"
+
+# 3. 检查套件是否已安装
+settings_path="${wb_home}/settings.json"
+plugin_installed=false
+
+if [ -f "$settings_path" ]; then
+    plugin_check=$(python3 -c "
+import json, sys
+try:
+    with open('$settings_path', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    enabled = data.get('enabledPlugins', {})
+    key = 'xiaodai-testing-expert@xiaodai-test-expert-marketplace'
+    if enabled.get(key) == True:
+        print('yes')
+    else:
+        print('no')
+except Exception as e:
+    print('error')
+" 2>/dev/null || echo "error")
+
+    if [ "$plugin_check" = "yes" ]; then
+        plugin_installed=true
+    fi
+fi
+
+if [ "$plugin_installed" = true ]; then
+    echo -e "${GREEN}[3/4] 套件已安装${NC}"
+else
+    echo -e "${YELLOW}[!] 未检测到已安装的 xiaodai-testing-expert 套件。${NC}"
+    echo -e "${YELLOW}    请先在 WorkBuddy 中安装套件后再运行本脚本。${NC}"
+    read -p "是否仍然继续注册？(y/n) " continue
+    if [ "$continue" != "y" ] && [ "$continue" != "Y" ]; then
+        read -p "按回车键退出"
+        exit 0
+    fi
+    echo -e "${GREEN}[3/4] 跳过套件检查${NC}"
+fi
+
+# 4. 写入专家注册表
+custom_dir="${wb_home}/experts/custom/${user_id}"
+experts_json_path="${custom_dir}/experts.json"
+already_registered=false
+
+if [ -f "$experts_json_path" ]; then
+    registered=$(python3 -c "
+import json, sys
+try:
+    with open('$experts_json_path', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    if isinstance(data, str):
+        data = [data]
+    if '$expert_id' in data:
+        print('yes')
+    else:
+        print('no')
+except Exception as e:
+    print('error')
+" 2>/dev/null || echo "error")
+
+    if [ "$registered" = "yes" ]; then
+        already_registered=true
+    fi
+fi
+
+if [ "$already_registered" = true ]; then
+    echo -e "${GREEN}[4/4] 专家已注册，无需重复操作。${NC}"
+else
+    mkdir -p "$custom_dir"
+
+    python3 -c "
+import json, os
+path = '$experts_json_path'
+expert_id = '$expert_id'
+
+existing = []
+if os.path.exists(path):
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            existing = json.load(f)
+        if isinstance(existing, str):
+            existing = [existing]
+    except:
+        existing = []
+
+if expert_id not in existing:
+    existing.append(expert_id)
+
+with open(path, 'w', encoding='utf-8') as f:
+    json.dump(existing, f, ensure_ascii=False, indent=2)
+" 2>/dev/null
+
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}[4/4] 专家注册成功！${NC}"
+    else
+        echo -e "${RED}[X] 专家注册失败，请检查权限或手动创建文件。${NC}"
+        read -p "按回车键退出"
+        exit 1
+    fi
+fi
+
+echo ""
+echo -e "${CYAN}=========================================${NC}"
+echo -e "${GREEN}  注册完成！${NC}"
+echo -e "${CYAN}=========================================${NC}"
+echo ""
+echo -e "${WHITE}下一步操作：${NC}"
+echo -e "${WHITE}  1. 完全退出 WorkBuddy（菜单栏图标 -> 退出）${NC}"
+echo -e "${WHITE}  2. 重新打开 WorkBuddy${NC}"
+echo -e "${WHITE}  3. 进入 [专家 技能 链接] -> [专家] -> 右上角 [我的专家]${NC}"
+echo -e "${WHITE}  4. 应该能看到 [效贷测试专家]${NC}"
+echo ""
+read -p "按回车键退出"
