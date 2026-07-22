@@ -1,60 +1,46 @@
 @echo off
-chcp 65001 >nul 2>&1
-
-echo.
-echo =========================================
-echo   效贷测试专家 - 安装后注册脚本
-echo =========================================
-echo.
+REM =========================================
+REM   xiaodai-testing-expert - Register Script
+REM   All Chinese output is handled by the .ps1 file
+REM =========================================
 
 set "PS1_FILE=%~dp0register_expert.ps1"
 
-:: 优先尝试 PowerShell 7 (pwsh.exe)，如果失败再尝试 Windows PowerShell (powershell.exe)
-set "PWSH_FOUND=0"
+REM Check if ps1 file exists
+if not exist "%PS1_FILE%" (
+    echo [ERROR] register_expert.ps1 not found in current directory.
+    echo Please make sure register_expert.bat and register_expert.ps1 are in the same folder.
+    pause
+    exit /b 1
+)
 
+REM Try PowerShell 7 (pwsh.exe) first, then Windows PowerShell (powershell.exe)
 where pwsh.exe >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo [信息] 使用 PowerShell 7 (pwsh.exe) 运行...
+    echo [INFO] Using PowerShell 7 ^(pwsh.exe^)...
     echo.
     pwsh.exe -ExecutionPolicy Bypass -File "%PS1_FILE%"
-    set "PWSH_FOUND=1"
     goto :DONE
 )
 
 where powershell.exe >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo [信息] 使用 Windows PowerShell (powershell.exe) 运行...
+    echo [INFO] Using Windows PowerShell ^(powershell.exe^)...
     echo.
     powershell.exe -ExecutionPolicy Bypass -File "%PS1_FILE%"
-    set "PWSH_FOUND=1"
     goto :DONE
 )
 
-:: 如果都没找到
-if "%PWSH_FOUND%"=="0" (
-    echo.
-    echo [X] 错误：当前系统未找到 PowerShell。
-    echo.
-    echo 请尝试以下方法之一：
-    echo   方法 1：右键点击 register_expert.ps1，选择"使用 PowerShell 运行"
-    echo   方法 2：安装 PowerShell 7 后重新运行本脚本
-    echo   方法 3：手动创建注册文件
-    echo.
-    echo 手动注册步骤：
-    echo   1. 打开文件夹：%%USERPROFILE%%\.workbuddy\experts\custom\
-    echo   2. 如果 custom 下没有以你的 userId 命名的文件夹，
-    echo      请从 %%USERPROFILE%%\.workbuddy\app\sessions.json 中找到 userId
-    echo   3. 在 userId 文件夹下创建 experts.json，内容：
-    echo      ["xiaodai-testing-expert"]
-    echo   4. 重启 WorkBuddy
-    echo.
-)
+REM Neither found
+echo.
+echo [ERROR] PowerShell not found on this system.
+echo.
+echo Please try one of the following:
+echo   1. Right-click register_expert.ps1 -^> "Run with PowerShell"
+echo   2. Install PowerShell 7 from https://github.com/PowerShell/PowerShell
+echo   3. Manual registration - see docs for instructions
+echo.
 
 :DONE
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo [提示] PowerShell 脚本执行失败，错误码：%ERRORLEVEL%
-)
-
 echo.
 pause

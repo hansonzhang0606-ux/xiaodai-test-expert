@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# 效贷测试专家 - Mac 安装后注册脚本
-# 用途：将已安装的 xiaodai-testing-expert 套件注册为 WorkBuddy 专家
-# 使用方法：chmod +x register_expert.sh && ./register_expert.sh
-# 前提：已通过团队市场安装 xiaodai-test-expert 套件
+# xiaodai-testing-expert - Mac Register Script
+# Registers the installed xiaodai-testing-expert plugin as a WorkBuddy expert
+# Usage: chmod +x register_expert.sh && ./register_expert.sh
+# Prerequisite: xiaodai-test-expert plugin installed via team marketplace
+# NOTE: Do NOT run with sudo - this script writes to your user directory only
 
 set -e
 
-# 颜色定义
+# Color definitions
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -27,8 +28,23 @@ print_header() {
 
 print_header
 
-# 1. 定位 WorkBuddy 主目录
-wb_home="${HOME}/.workbuddy"
+# Detect actual user home directory (even if run with sudo)
+if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+    REAL_HOME=$(eval echo "~$SUDO_USER")
+elif [ "$(id -u)" = "0" ]; then
+    # Running as root without SUDO_USER - warn and try to find real user
+    echo -e "${RED}[X] 检测到以 root 权限运行，无法定位用户目录。${NC}"
+    echo -e "${YELLOW}请勿使用 sudo 运行本脚本。请直接运行：${NC}"
+    echo -e "${WHITE}  chmod +x register_expert.sh && ./register_expert.sh${NC}"
+    echo ""
+    read -p "按回车键退出"
+    exit 1
+else
+    REAL_HOME="$HOME"
+fi
+
+# 1. Locate WorkBuddy home directory
+wb_home="${REAL_HOME}/.workbuddy"
 if [ ! -d "$wb_home" ]; then
     echo -e "${RED}[X] 未找到 WorkBuddy 目录: $wb_home${NC}"
     echo -e "${YELLOW}请确认 WorkBuddy 已安装并至少打开过一次。${NC}"
@@ -37,7 +53,7 @@ if [ ! -d "$wb_home" ]; then
 fi
 echo -e "${GREEN}[1/4] WorkBuddy 目录: $wb_home${NC}"
 
-# 2. 获取用户 ID
+# 2. Get user ID
 user_id=""
 sessions_path="${wb_home}/app/sessions.json"
 
@@ -57,7 +73,7 @@ except Exception as e:
 " 2>/dev/null || true)
 fi
 
-# 方式 B：从 experts/custom 目录中查找已有用户目录
+# Method B: find existing user directory from experts/custom
 if [ -z "$user_id" ]; then
     custom_base="${wb_home}/experts/custom"
     if [ -d "$custom_base" ]; then
@@ -80,7 +96,7 @@ if [ -z "$user_id" ]; then
 fi
 echo -e "${GREEN}[2/4] 用户 ID: $user_id${NC}"
 
-# 3. 检查套件是否已安装
+# 3. Check if plugin is installed
 settings_path="${wb_home}/settings.json"
 plugin_installed=false
 
@@ -118,7 +134,7 @@ else
     echo -e "${GREEN}[3/4] 跳过套件检查${NC}"
 fi
 
-# 4. 写入专家注册表
+# 4. Write expert registration
 custom_dir="${wb_home}/experts/custom/${user_id}"
 experts_json_path="${custom_dir}/experts.json"
 already_registered=false
