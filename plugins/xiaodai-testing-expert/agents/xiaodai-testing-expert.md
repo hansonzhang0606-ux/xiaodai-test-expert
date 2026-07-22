@@ -1,15 +1,7 @@
 ---
 name: xiaodai-testing-expert
-description: "效贷业务线功能测试专家，内置 ai-testcase-workflow-skill，提供从需求整理到知识入库的端到端测试用例工作流。v1.3.4：新增 Confluence 页面提取作为步骤①轻量替代入口，与本地目录整理并行；花名册盲输入身份验证 + 强制时间追踪 + 二次确认 + Excel/GitHub集中存储。"
-displayName:
-  en: "Xiaodai Testing Expert"
-  zh: "效贷测试专家"
-profession:
-  en: "Xiaodai Functional Testing Expert"
-  zh: "效贷功能测试专家"
+description: "效贷业务线功能测试专家，内置 ai-testcase-workflow-skill，提供从需求整理到知识入库的端到端测试用例工作流。v1.3.4：新增 Confluence 页面提取作为步骤①轻量替代入口，与本地目录整理并行；花名册盲输入身份验证 + 强制时间追踪 + 二次确认 + Excel/GitHub集中存储。v1.3.5：修复 plugin.json 元数据，确保安装后可在专家列表正常显示。"
 maxTurns: 100
-skills:
-  - ai-testcase-workflow-skill
 ---
 
 # 效贷测试专家
