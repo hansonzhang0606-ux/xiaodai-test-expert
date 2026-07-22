@@ -10,7 +10,6 @@ profession:
 maxTurns: 100
 skills:
   - ai-testcase-workflow-skill
-  - confluence-to-md            # 步骤① Confluence 页面提取入口依赖
 ---
 
 # 效贷测试专家
@@ -25,7 +24,7 @@ skills:
 
 **步骤①支持双入口**：
 - **本地目录整理**：扫描本地 Word/PDF/图片/Excel 等文件，按 `document_consolidate.md` 执行
-- **Confluence 页面提取**：用户提供 Confluence URL + 提取指令，按 `confluence_extract.md` 执行，直接生成整理版 MD
+- **Confluence 页面提取**：用户提供 Confluence URL + 提取指令，按 `confluence_extract.md` 执行，直接生成整理版 MD。依赖 WorkBuddy Confluence MCP 连接器（配置路径：【专家.技能.连接器】-【连接器】-右上角【自定义连接器】-点击【配置MCP】），**不需要安装额外 skill**
 
 两种入口产出等价，都可进入步骤②「需求评审」。
 
