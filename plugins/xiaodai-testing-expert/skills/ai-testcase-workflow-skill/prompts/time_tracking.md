@@ -238,16 +238,42 @@ python scripts/record_time_saved.py \
 - "查看时间统计" / "时间节省分析" / "时间报告"
 - "节省了多少时间" / "效能统计" / "查看时间节省统计"
 
-### 数据来源
+### 数据来源（按 storage_mode 分支，必须严格按当前模式执行）
 
-**storage_mode=cloud 时**：
-1. 通过 tencent-docs skill 读取智能表格全部数据
-2. 将数据写入临时 JSON 文件 `~/.workbuddy/data/time-tracking/效贷/_cloud_sync.json`
-3. 调用脚本：`python scripts/generate_time_analytics.py --biz-line "效贷" --input ~/.workbuddy/data/time-tracking/效贷/_cloud_sync.json`
+**storage_mode=cloud 时（当前生效）**：
+
+> **严禁读取本地 Excel 或仅读本地 JSONL**。cloud 模式下数据源是腾讯文档智能表格，必须从云端读取。
+
+执行步骤：
+
+1. **读取配置**：读取 `config/time_tracking_config.yaml`，获取 `tencent_docs.doc_id`（即 file_id）和 `tencent_docs.sheet_id`（即 sheet_id）
+
+2. **调用 MCP 读取全量数据**：使用工具 `mcp__tencent-docs__smartsheet.list_records`，参数：
+   ```json
+   {
+     "file_id": "{doc_id}",
+     "sheet_id": "{sheet_id}",
+     "limit": 500
+   }
+   ```
+   > 如果连接器未连接，告知用户"腾讯文档连接器未连接，无法读取云端数据"，不要 fallback 到本地数据。
+
+3. **转换数据格式**：将返回的 `records` 数组中每条记录的 `field_values` 转换为扁平 JSON 对象。转换规则：
+   - `text_value.items[0].text` → 字符串值
+   - `number_value` → 数值
+   - `string_value` → 字符串值（如记录时间的时间戳）
+   - 字段映射：员工姓名→employee、用户故事→user_story、步骤→step、步骤编码→step_code、节省小时数→time_saved_hours、节省人天数→time_saved_pd、折算总小时→total_hours、业务线→biz_line、备注→remark
+
+4. **写入临时 JSON 文件**：将转换后的记录列表写入 `~/.workbuddy/data/time-tracking/效贷/_cloud_sync.json`
+
+5. **生成报告**：
+   ```bash
+   python scripts/generate_time_analytics.py --biz-line "效贷" --input ~/.workbuddy/data/time-tracking/效贷/_cloud_sync.json
+   ```
 
 **storage_mode=excel 时**：
-1. 调用脚本：`python scripts/generate_time_analytics.py --biz-line "效贷" --input <Excel文件路径>`
-2. 脚本自动从 Excel 读取全部记录并生成报告
+1. 读取 `config/time_tracking_config.yaml` 获取 `excel.file_path`
+2. 调用脚本：`python scripts/generate_time_analytics.py --biz-line "效贷" --input <Excel文件路径>`
 
 **storage_mode=local 时**：
 1. 直接调用：`python scripts/generate_time_analytics.py --biz-line "效贷"`
@@ -303,20 +329,8 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 6. 通知所有员工：下次使用专家时数据将自动写入 Excel
 
 > 管理员也可在【更多】-【我的文件】中上传一个空白 Excel，然后告知 AI 文件路径，AI 直接写入。
-
-#### 每日定时同步（已配置）
-
-已创建自动化任务"效贷时间追踪数据每日同步"，每天 21:00 自动将本地 JSONL 全量同步到 Excel：
-
-```bash
-python scripts/sync_to_excel.py --sync-all \
-  --jsonl "C:/Users/kingdee/.workbuddy/data/time-tracking/效贷/records.jsonl" \
-  --excel "D:/##AI转型/workbuddy专家数据/效贷功能测试专家-节省时间数据记录.xlsx"
-```
-
-- 同步方式：全量覆盖（保证 Excel 与 JSONL 完全一致）
-- 如果 Excel 文件被占用（如正在打开），同步会失败并报告错误，不影响本地数据
-- 管理员可通过"查看时间节省统计"随时生成最新报告
+>
+> ⚠️ 当前已切换到 cloud 模式，Excel 模式不再使用。如需切回 Excel 模式，将 `storage_mode` 改为 `"excel"` 即可。
 
 ### 方案 B：腾讯文档智能表格（需企业账号授权）
 
