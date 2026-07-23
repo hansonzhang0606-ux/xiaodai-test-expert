@@ -23,8 +23,8 @@
     "zh": "效贷功能测试专家"
   },
   "displayDescription": {
-    "en": "Xiaodai testing expert with end-to-end pipeline: requirement consolidation (local directory or Confluence page), review, test point generation, case refinement, knowledge archiving, and mandatory time-saving tracking with team roster.",
-    "zh": "效贷业务线功能测试专家，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库的端到端流水线。内置花名册盲输入身份验证、强制时间节省追踪（二次确认+腾讯文档智能表格同步+用户故事目录自动管理）。"
+    "en": "[v1.4.0] Xiaodai testing expert with end-to-end pipeline: requirement consolidation (local directory or Confluence page), review, test point generation, case refinement, knowledge archiving, and mandatory time-saving tracking with team roster.",
+    "zh": "【v1.4.0】效贷业务线功能测试专家，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库的端到端流水线。内置花名册盲输入身份验证、强制时间节省追踪（二次确认+腾讯文档智能表格同步+用户故事目录自动管理）。"
   },
   "avatar": "avatars/expert.png",
   "categoryId": "10-ProjectQuality",
@@ -38,8 +38,9 @@
     { "en": "Time Tracking", "zh": "时间节省追踪" }
   ],
   "quickPrompts": [
-    { "en": "I am the Xiaodai Testing Expert. I can help you with requirement consolidation (local directory or Confluence page), requirement review, test point generation, case refinement, and knowledge archiving. Before we start, I need to verify your identity. Please enter your name.", "zh": "我是【效贷测试专家】，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库。请问您是效贷业务线哪位测试工程师，请告诉我你的姓名，进行人员验证，谢谢！" },
+    { "en": "Help me consolidate the requirement documents in this directory.", "zh": "帮我整理这个需求目录下的文档。" },
     { "en": "Extract this Confluence page and prepare it for review.", "zh": "提取这个 Confluence 页面内容并整理成需求文档。" },
-    { "en": "Review this requirement and identify risks and gaps.", "zh": "评审这份需求，指出风险和缺失点。" }
+    { "en": "Review this requirement and identify risks and gaps.", "zh": "评审这份需求，指出风险和缺失点。" },
+    { "en": "Show time-saving analytics for Xiaodai business line.", "zh": "查看时间节省统计" }
   ]
 }
