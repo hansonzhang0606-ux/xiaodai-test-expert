@@ -53,6 +53,42 @@ tencent_docs:
   # - 测试人员完成步骤后，AI 自动追加一行数据到此表格
   # - 管理员说"查看时间统计"时，AI 从此表格读取全量数据生成报告
 
+  # ============================================================
+  # 字段映射（AI 追加记录时使用，field = 智能表格列标题）
+  # ============================================================
+  # record_time_saved.py 输出的 JSON key → 智能表格列标题 + 值类型
+  # 值类型：text_value / number_value / string_value
+  # 「记录时间」列已配置 auto_fill=true，创建记录时自动填充，无需传值
+  field_mapping:
+    - json_key: "employee"
+      field: "员工姓名"
+      value_type: "text_value"
+    - json_key: "user_story"
+      field: "用户故事"
+      value_type: "text_value"
+    - json_key: "step"
+      field: "步骤"
+      value_type: "text_value"
+    - json_key: "step_code"
+      field: "步骤编码"
+      value_type: "text_value"
+    - json_key: "time_saved_hours"
+      field: "节省小时数"
+      value_type: "number_value"
+    - json_key: "time_saved_pd"
+      field: "节省人天数"
+      value_type: "number_value"
+    - json_key: "total_hours"
+      field: "折算总小时"
+      value_type: "number_value"
+    - json_key: "biz_line"
+      field: "业务线"
+      value_type: "text_value"
+    - json_key: "remark"
+      field: "备注"
+      value_type: "text_value"
+      optional: true                    # 空值时跳过此字段
+
 # ============================================================
 # 参考时间表（每步完成后展示给员工参考）
 # 员工可采纳参考值，也可自行反馈实际节省时间

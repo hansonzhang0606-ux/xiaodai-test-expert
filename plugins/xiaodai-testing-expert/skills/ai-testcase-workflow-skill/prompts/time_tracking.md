@@ -1,10 +1,10 @@
-# 时间节省追踪规则（v3 — 强制反馈 + 二次确认 + 参考时间 + Excel集中存储）
+# 时间节省追踪规则（v4 — 强制反馈 + 二次确认 + 参考时间 + 腾讯文档实时同步）
 
 > **本文件定义了工作流每个步骤完成后，强制收集时间节省数据的执行规则。**
 > 触发条件：会话启动时选择身份；步骤 ①②④⑥⑦ 完成后强制反馈；
 > 用户说"查看时间统计"时生成分析报告。
 >
-> **v3 变更**：① 新增二次确认机制；② 存储统一为小时，报告展示为人天；③ 新增 Excel 集中存储方案。
+> **v4 变更**：cloud 模式下，用户确认后**立即**调用腾讯文档 MCP `mcp__tencent-docs__smartsheet.add_records` 追加一行到智能表格，实现实时同步（非定时批量）。
 
 ---
 
@@ -147,7 +147,11 @@
 - 用户回复"取消" / "不要了" → 不保存，标注"用户取消记录"，继续推进工作流
 - **不确认不保存**：用户未明确确认前，禁止调用记录脚本
 
-### 第 4 步：调用记录脚本
+### 第 4 步：写入数据（JSONL 兜底 + 云端实时同步）
+
+用户确认后，**立即同时执行以下两步**（不分先后，都不可跳过）：
+
+#### 4a. 写入本地 JSONL（兜底）
 
 ```bash
 python scripts/record_time_saved.py \
@@ -162,34 +166,91 @@ python scripts/record_time_saved.py \
 
 > 如果用户用的是人天，则用 `--person-days {人天数}` 代替 `--hours`。脚本内部自动换算为小时存储。
 
-### 第 5 步：同步到 Excel / 腾讯文档（按 storage_mode 决定）
+#### 4b. 实时同步到腾讯文档智能表格（cloud 模式，与 4a 同时执行）
 
-读取 `config/time_tracking_config.yaml` 中的 `storage_mode`：
+读取 `config/time_tracking_config.yaml` 中的 `tencent_docs.doc_id`、`tencent_docs.sheet_id` 和 `tencent_docs.field_mapping`。
 
-| storage_mode | 行为 |
-|-------------|------|
-| `local` | 仅本地 JSONL，不同步 |
-| `excel` | 本地 JSONL + 追加写入 Excel 文件（路径见配置） |
-| `cloud` | 本地 JSONL + 腾讯文档智能表格（需连接器已连接） |
+调用 MCP 工具 **`mcp__tencent-docs__smartsheet.add_records`**，按以下结构构造参数：
 
-**excel 模式**：
-- 调用 `python scripts/sync_to_excel.py --record <JSONL文件路径> --excel <Excel路径>`
-- 如果 Excel 文件不存在，脚本自动创建并写入表头
-- 如果写入失败，记录错误日志但**不阻塞**工作流，本地 JSONL 已有记录
+```json
+{
+  "file_id": "{doc_id}",
+  "sheet_id": "{sheet_id}",
+  "records": [
+    {
+      "field_values": [
+        {
+          "field": "员工姓名",
+          "text_value": {
+            "items": [{"text": "{员工姓名}", "type": "text"}]
+          }
+        },
+        {
+          "field": "用户故事",
+          "text_value": {
+            "items": [{"text": "{用户故事}", "type": "text"}]
+          }
+        },
+        {
+          "field": "步骤",
+          "text_value": {
+            "items": [{"text": "{步骤名称}", "type": "text"}]
+          }
+        },
+        {
+          "field": "步骤编码",
+          "text_value": {
+            "items": [{"text": "{步骤代码}", "type": "text"}]
+          }
+        },
+        {
+          "field": "节省小时数",
+          "number_value": {hours}
+        },
+        {
+          "field": "节省人天数",
+          "number_value": {person_days}
+        },
+        {
+          "field": "折算总小时",
+          "number_value": {total_hours}
+        },
+        {
+          "field": "业务线",
+          "text_value": {
+            "items": [{"text": "效贷", "type": "text"}]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
 
-**cloud 模式**：
-- 调用 tencent-docs skill 的智能表格写入工具，追加一行数据
-- 字段映射：记录时间→timestamp, 员工姓名→employee, 用户故事→user_story, 步骤→step, 步骤编码→step_code, 节省小时数→hours, 节省人天数→person_days, 折算总小时→total_hours, 业务线→biz_line, 备注→remark
-- 如果写入失败，记录错误日志但**不阻塞**工作流，本地 JSONL 已有记录
+> **字段说明**：
+> - `{hours}` = 换算后的小时数（数字，如 `4.0`）
+> - `{person_days}` = 换算后的人天数（数字，如 `0.5`）
+> - `{total_hours}` = 总小时数（与 hours 相同，数字，如 `4.0`）
+> - 「记录时间」字段已配置 `auto_fill=true`，创建记录时自动填充当前时间，**不需要传值**
+> - 如果「备注」非空，在 `field_values` 数组末尾追加：`{"field": "备注", "text_value": {"items": [{"text": "{备注内容}", "type": "text"}]}}`
+> - 如果「备注」为空，跳过此字段
 
-### 第 6 步：确认记录
+**同步结果处理**：
+- **成功**：继续执行第 5 步确认记录，在确认信息中标注"📡 已实时同步到团队智能表格"
+- **失败**（连接器未连接 / MCP 调用报错）：**不阻塞工作流**，本地 JSONL 已有记录（4a 兜底），在确认信息中标注"⚠️ 智能表格同步失败（{错误信息}），本地已记录。请检查腾讯文档连接器是否已连接。"
+
+### 第 5 步：确认记录
 
 ```
 ✅ 已记录：{员工} 在 {用户故事} 的 {步骤名称} 环节节省了 {hours} 小时（{person_days} 人天）。
-   {excel 模式：📊 已同步到 Excel 文件：{路径}}
-   {cloud 模式：📡 已同步到团队智能表格。}
-   {local 模式：📍 已记录到本地，待配置集中存储后同步。}
+   📡 已实时同步到团队智能表格。
 ```
+
+> 如果 4b 同步失败，则显示：
+> ```
+> ✅ 已记录：{员工} 在 {用户故事} 的 {步骤名称} 环节节省了 {hours} 小时（{person_days} 人天）。
+>    ⚠️ 智能表格同步失败（{错误信息}），本地已记录。请检查腾讯文档连接器是否已连接。
+> ```
 
 ---
 
