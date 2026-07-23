@@ -1,11 +1,11 @@
 {
   "name": "xiaodai-test-expert-marketplace",
-  "description": "效贷业务线功能测试专家私有市场，提供测试用例全流程生成（文档整理→需求评审→测试点→用例→入库）与时间节省追踪能力。v1.3.4 新增 Confluence 页面提取作为步骤①的轻量入口。",
+  "description": "效贷业务线功能测试专家私有市场，提供测试用例全流程生成（文档整理→需求评审→测试点→用例→入库）与时间节省追踪能力。v1.4.0 新增用户故事目录自动管理、腾讯文档智能表格实时同步修复、花名册强制读取校验。",
   "plugins": [
     {
       "name": "xiaodai-testing-expert",
       "source": "./plugins/xiaodai-testing-expert",
-      "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.3.4 adds Confluence page extraction as a lightweight alternative entry to document consolidation."
+      "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0 adds user story directory auto-management, Tencent Docs cloud sync fix, and mandatory roster-based identity verification."
     }
   ]
 }
