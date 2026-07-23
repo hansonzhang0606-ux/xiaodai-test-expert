@@ -7,7 +7,7 @@
 # local:  仅本地 JSONL（默认，无集中存储）
 # excel:  本地 JSONL + Excel 文件（管理员分发或共享目录）
 # cloud:  腾讯文档智能表格为主 + 本地 JSONL 兜底
-storage_mode: "excel"
+storage_mode: "cloud"
 
 # ============================================================
 # 本地存储路径（relative to ~/.workbuddy/data/）

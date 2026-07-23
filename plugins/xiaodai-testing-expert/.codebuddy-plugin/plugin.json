@@ -1,7 +1,7 @@
 {
   "name": "xiaodai-testing-expert",
-  "version": "1.3.7",
-  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.3.7: optimized defaultInitPrompt with full welcome message and identity verification guidance, added step 1 dual-entry active prompting rule.",
+  "version": "1.3.8",
+  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.3.8: switched time tracking storage from GitHub repo to Tencent Docs smart sheet (cloud mode), testers no longer need GitHub accounts/PATs.",
   "author": {
     "name": "Quality Management Team",
     "email": "qa@kingdee.com"
