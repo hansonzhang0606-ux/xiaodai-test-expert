@@ -118,69 +118,192 @@ def generate_csv(records: list, biz_line: str, output_path: str):
     print(f"CSV 报告已生成: {output_path}")
 
 
-def generate_html(records: list, biz_line: str, output_path: str):
-    """生成 HTML 可视化报告"""
-
-    # ---- 统计计算 ----
+def compute_stats(records: list) -> dict:
+    """计算统计数据"""
     total_records = len(records)
-    # 使用 total_hours 字段（v2记录），否则回退到 time_saved_hours
     total_hours = sum(r.get("total_hours", r.get("time_saved_hours", 0)) for r in records)
     total_pd = sum(r.get("time_saved_pd", 0) for r in records)
 
-    # 按员工统计
     by_employee = defaultdict(lambda: {"hours": 0, "pd": 0, "count": 0, "stories": set()})
+    by_story = defaultdict(lambda: {"hours": 0, "pd": 0, "count": 0, "employees": set(), "steps": set()})
+    by_step = defaultdict(lambda: {"hours": 0, "pd": 0, "count": 0, "employees": set()})
+    by_date = defaultdict(lambda: {"hours": 0, "pd": 0, "count": 0})
+    cross_data = defaultdict(lambda: defaultdict(float))
+
     for r in records:
         emp = r.get("employee", "未知")
-        by_employee[emp]["hours"] += r.get("time_saved_hours", 0)
-        by_employee[emp]["pd"] += r.get("time_saved_pd", 0)
-        by_employee[emp]["count"] += 1
-        by_employee[emp]["stories"].add(r.get("user_story", ""))
-
-    # 按用户故事统计
-    by_story = defaultdict(lambda: {"hours": 0, "pd": 0, "count": 0, "employees": set(), "steps": set()})
-    for r in records:
         story = r.get("user_story", "未知")
-        by_story[story]["hours"] += r.get("time_saved_hours", 0)
-        by_story[story]["pd"] += r.get("time_saved_pd", 0)
-        by_story[story]["count"] += 1
-        by_story[story]["employees"].add(r.get("employee", ""))
-        by_story[story]["steps"].add(r.get("step", ""))
-
-    # 按步骤统计
-    by_step = defaultdict(lambda: {"hours": 0, "pd": 0, "count": 0, "employees": set()})
-    for r in records:
         step = r.get("step", "未知")
-        by_step[step]["hours"] += r.get("time_saved_hours", 0)
-        by_step[step]["pd"] += r.get("time_saved_pd", 0)
-        by_step[step]["count"] += 1
-        by_step[step]["employees"].add(r.get("employee", ""))
-
-    # 按日期统计趋势
-    by_date = defaultdict(lambda: {"hours": 0, "pd": 0, "count": 0})
-    for r in records:
         date = r.get("date", "未知")
-        by_date[date]["hours"] += r.get("time_saved_hours", 0)
-        by_date[date]["pd"] += r.get("time_saved_pd", 0)
+        hours = r.get("total_hours", r.get("time_saved_hours", 0))
+        pd = r.get("time_saved_pd", 0)
+
+        by_employee[emp]["hours"] += hours
+        by_employee[emp]["pd"] += pd
+        by_employee[emp]["count"] += 1
+        by_employee[emp]["stories"].add(story)
+
+        by_story[story]["hours"] += hours
+        by_story[story]["pd"] += pd
+        by_story[story]["count"] += 1
+        by_story[story]["employees"].add(emp)
+        by_story[story]["steps"].add(step)
+
+        by_step[step]["hours"] += hours
+        by_step[step]["pd"] += pd
+        by_step[step]["count"] += 1
+        by_step[step]["employees"].add(emp)
+
+        by_date[date]["hours"] += hours
+        by_date[date]["pd"] += pd
         by_date[date]["count"] += 1
 
-    # 员工 x 步骤 交叉表（v3: 以人天为单位）
-    cross_data = defaultdict(lambda: defaultdict(float))
-    employees_sorted = sorted(by_employee.keys())
-    steps_sorted = sorted(by_step.keys(), key=lambda s: STEP_ORDER.index(next((c for c, n in STEP_NAMES.items() if n == s), "99")) if any(c for c, n in STEP_NAMES.items() if n == s) else 99)
-    for r in records:
-        cross_data[r.get("employee", "未知")][r.get("step", "未知")] += r.get("total_hours", r.get("time_saved_hours", 0)) / HOURS_PER_PD
+        cross_data[emp][step] += hours / HOURS_PER_PD
 
-    # ---- 最大值用于柱状图比例 ----
-    max_emp_hours = max((v["hours"] for v in by_employee.values()), default=1)
-    max_step_hours = max((v["hours"] for v in by_step.values()), default=1)
-    max_story_hours = max((v["hours"] for v in by_story.values()), default=1)
-    max_date_hours = max((v["hours"] for v in by_date.values()), default=1)
+    # 将 set 转为 list 以便 JSON 序列化
+    by_employee_out = {}
+    for emp, v in by_employee.items():
+        by_employee_out[emp] = {**v, "stories": sorted(v["stories"])}
 
+    by_story_out = {}
+    for story, v in by_story.items():
+        by_story_out[story] = {**v, "employees": sorted(v["employees"]), "steps": sorted(v["steps"])}
+
+    by_step_out = {}
+    for step, v in by_step.items():
+        by_step_out[step] = {**v, "employees": sorted(v["employees"])}
+
+    return {
+        "total_records": total_records,
+        "total_hours": total_hours,
+        "total_pd": total_pd,
+        "by_employee": by_employee_out,
+        "by_story": by_story_out,
+        "by_step": by_step_out,
+        "by_date": dict(by_date),
+        "cross_data": {emp: dict(steps) for emp, steps in cross_data.items()},
+        "unique_employees": len(by_employee),
+        "unique_stories": len(by_story),
+    }
+
+
+def generate_html(records: list, biz_line: str, output_path: str):
+    """生成 HTML 可视化报告"""
+
+    stats = compute_stats(records)
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # ---- HTML 生成 ----
-    html_parts = []
-    html_parts.append(f"""<!DOCTYPE html>
+    # 所有员工、步骤、故事、日期（用于下拉选项）
+    all_employees = sorted(set(r.get("employee", "未知") for r in records))
+    all_steps = sorted(set(r.get("step", "未知") for r in records))
+    all_stories = sorted(set(r.get("user_story", "未知") for r in records))
+    all_dates = sorted(set(r.get("date", "") for r in records if r.get("date")))
+
+    # 步骤排序
+    def step_sort_key(s):
+        for code, name in STEP_NAMES.items():
+            if name == s:
+                return STEP_ORDER.index(code)
+        return 99
+
+    steps_sorted = sorted(stats["by_step"].keys(), key=step_sort_key)
+    employees_sorted = sorted(stats["by_employee"].keys())
+
+    # 最大值用于柱状图比例
+    max_emp_hours = max((v["hours"] for v in stats["by_employee"].values()), default=1)
+    max_step_hours = max((v["hours"] for v in stats["by_step"].values()), default=1)
+    max_story_hours = max((v["hours"] for v in stats["by_story"].values()), default=1)
+    max_date_hours = max((v["hours"] for v in stats["by_date"].values()), default=1)
+
+    records_json = json.dumps(records, ensure_ascii=False)
+    stats_json = json.dumps(stats, ensure_ascii=False)
+
+    # 生成初始表格行 HTML
+    def employee_rows(s):
+        rows = []
+        max_h = max((v["hours"] for v in s["by_employee"].values()), default=1)
+        for emp in sorted(s["by_employee"].keys(), key=lambda e: s["by_employee"][e]["hours"], reverse=True):
+            v = s["by_employee"][emp]
+            bar_width = int(v["hours"] / max_h * 100) if max_h > 0 else 0
+            rows.append(f"""
+      <tr>
+        <td class="number">{emp}</td>
+        <td>{v['pd']:.1f} 人天 ({v['hours']:.1f} 小时)</td>
+        <td><span class="bar-container"><span class="bar green" style="width: {bar_width}%"></span></span></td>
+        <td>{v['count']}</td>
+        <td>{len(v['stories'])}</td>
+      </tr>""")
+        return "\n".join(rows)
+
+    def step_rows(s):
+        rows = []
+        max_h = max((v["hours"] for v in s["by_step"].values()), default=1)
+        step_order_sorted = sorted(s["by_step"].keys(), key=step_sort_key)
+        for step in step_order_sorted:
+            v = s["by_step"][step]
+            bar_width = int(v["hours"] / max_h * 100) if max_h > 0 else 0
+            rows.append(f"""
+      <tr>
+        <td class="number">{step}</td>
+        <td>{v['pd']:.1f} 人天 ({v['hours']:.1f} 小时)</td>
+        <td><span class="bar-container"><span class="bar blue" style="width: {bar_width}%"></span></span></td>
+        <td>{v['count']}</td>
+        <td>{len(v['employees'])}</td>
+      </tr>""")
+        return "\n".join(rows)
+
+    def story_rows(s):
+        rows = []
+        max_h = max((v["hours"] for v in s["by_story"].values()), default=1)
+        for story in sorted(s["by_story"].keys(), key=lambda s2: s["by_story"][s2]["hours"], reverse=True):
+            v = s["by_story"][story]
+            bar_width = int(v["hours"] / max_h * 100) if max_h > 0 else 0
+            emp_tags = " ".join(f'<span class="tag b">{e}</span>' for e in sorted(v["employees"]))
+            step_tags = " ".join(f'<span class="tag o">{s2}</span>' for s2 in sorted(v["steps"]))
+            rows.append(f"""
+      <tr>
+        <td class="number">{story}</td>
+        <td>{v['pd']:.1f} 人天 ({v['hours']:.1f} 小时)</td>
+        <td><span class="bar-container"><span class="bar orange" style="width: {bar_width}%"></span></span></td>
+        <td>{v['count']}</td>
+        <td>{emp_tags}</td>
+        <td>{step_tags}</td>
+      </tr>""")
+        return "\n".join(rows)
+
+    def date_rows(s):
+        rows = []
+        max_h = max((v["hours"] for v in s["by_date"].values()), default=1)
+        for date in sorted(s["by_date"].keys()):
+            v = s["by_date"][date]
+            bar_width = int(v["hours"] / max_h * 100) if max_h > 0 else 0
+            rows.append(f"""
+      <tr>
+        <td class="number">{date}</td>
+        <td>{v['pd']:.1f} 人天 ({v['hours']:.1f} 小时)</td>
+        <td><span class="bar-container"><span class="bar purple" style="width: {bar_width}%"></span></span></td>
+        <td>{v['count']}</td>
+      </tr>""")
+        return "\n".join(rows)
+
+    def cross_rows(s):
+        rows = []
+        emps = sorted(s["by_employee"].keys())
+        steps = sorted(s["by_step"].keys(), key=step_sort_key)
+        for emp in emps:
+            row_total = sum(s["cross_data"].get(emp, {}).values())
+            cells = "\n".join(
+                f"        <td>{s['cross_data'].get(emp, {}).get(step, 0):.1f}</td>" if s['cross_data'].get(emp, {}).get(step, 0) > 0 else "        <td>-</td>"
+                for step in steps
+            )
+            rows.append(f"""      <tr>
+        <td class='number'>{emp}</td>
+{cells}
+        <td class='number'>{row_total:.1f}</td>
+      </tr>""")
+        return "\n".join(rows)
+
+    html_content = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -189,7 +312,7 @@ def generate_html(records: list, biz_line: str, output_path: str):
 <style>
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f7fa; color: #333; padding: 24px; }}
-  .header {{ text-align: center; margin-bottom: 32px; }}
+  .header {{ text-align: center; margin-bottom: 24px; }}
   .header h1 {{ font-size: 28px; color: #1a1a2e; margin-bottom: 8px; }}
   .header .subtitle {{ font-size: 14px; color: #888; }}
   .summary-cards {{ display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }}
@@ -222,6 +345,23 @@ def generate_html(records: list, biz_line: str, output_path: str):
   .footer {{ text-align: center; margin-top: 32px; color: #aaa; font-size: 12px; }}
   .cross-table th, .cross-table td {{ text-align: center; font-size: 13px; }}
   .cross-table th:first-child, .cross-table td:first-child {{ text-align: left; }}
+
+  /* 筛选面板样式 */
+  .filter-panel {{ background: #fff; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }}
+  .filter-panel h2 {{ font-size: 16px; color: #1a1a2e; margin-bottom: 16px; border-left: 4px solid #1890ff; padding-left: 12px; }}
+  .filter-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: end; }}
+  .filter-item {{ display: flex; flex-direction: column; gap: 6px; }}
+  .filter-item label {{ font-size: 13px; color: #555; font-weight: 500; }}
+  .filter-item input, .filter-item select {{ padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s; }}
+  .filter-item input:focus, .filter-item select:focus {{ border-color: #1890ff; }}
+  .filter-actions {{ display: flex; gap: 12px; margin-top: 16px; }}
+  .filter-actions button {{ padding: 8px 20px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; transition: opacity 0.2s; }}
+  .filter-actions button:hover {{ opacity: 0.85; }}
+  .btn-primary {{ background: #1890ff; color: #fff; }}
+  .btn-default {{ background: #f0f0f0; color: #555; border: 1px solid #d9d9d9 !important; }}
+  .filter-status {{ margin-top: 12px; font-size: 13px; color: #888; }}
+  .filter-status strong {{ color: #1890ff; }}
+  .hidden-section {{ display: none; }}
 </style>
 </head>
 <body>
@@ -230,211 +370,474 @@ def generate_html(records: list, biz_line: str, output_path: str):
   <h1>{biz_line}业务线 · 测试智能助手时间节省分析</h1>
   <div class="subtitle">报告生成时间：{now} | 数据来源：records.jsonl</div>
 </div>
-""")
 
-    # ---- 概览卡片（v3: 人天为主展示）----
-    unique_employees = len(by_employee)
-    unique_stories = len(by_story)
-    total_pd_from_hours = total_hours / HOURS_PER_PD
-    html_parts.append(f"""
-<div class="summary-cards">
+<div class="filter-panel">
+  <h2>筛选查询</h2>
+  <div class="filter-grid">
+    <div class="filter-item">
+      <label for="filter-global">全局查询</label>
+      <input type="text" id="filter-global" placeholder="员工 / 步骤 / 用户故事 / 备注">
+    </div>
+    <div class="filter-item">
+      <label for="filter-employee">员工</label>
+      <select id="filter-employee">
+        <option value="">全部员工</option>
+        {''.join(f'<option value="{e}">{e}</option>' for e in all_employees)}
+      </select>
+    </div>
+    <div class="filter-item">
+      <label for="filter-step">工作流步骤</label>
+      <select id="filter-step">
+        <option value="">全部步骤</option>
+        {''.join(f'<option value="{s}">{s}</option>' for s in all_steps)}
+      </select>
+    </div>
+    <div class="filter-item">
+      <label for="filter-date-type">日期维度</label>
+      <select id="filter-date-type">
+        <option value="">全部日期</option>
+        <option value="month">按月度</option>
+        <option value="quarter">按季度</option>
+        <option value="year">按年度</option>
+      </select>
+    </div>
+    <div class="filter-item">
+      <label for="filter-date-value">日期值</label>
+      <select id="filter-date-value" disabled>
+        <option value="">请先选择日期维度</option>
+      </select>
+    </div>
+    <div class="filter-item">
+      <label for="filter-story">用户故事名称（模糊查询）</label>
+      <input type="text" id="filter-story" placeholder="输入用户故事名称关键词">
+    </div>
+  </div>
+  <div class="filter-actions">
+    <button class="btn-primary" onclick="applyFilters()">查询</button>
+    <button class="btn-default" onclick="resetFilters()">重置</button>
+  </div>
+  <div class="filter-status" id="filter-status"></div>
+</div>
+
+<div class="summary-cards" id="summary-cards">
   <div class="card green">
     <div class="label">累计节省时间</div>
-    <div class="value">{total_pd_from_hours:.1f}<span class="unit">人天</span></div>
+    <div class="value" id="total-pd">{stats['total_pd']:.1f}<span class="unit">人天</span></div>
   </div>
   <div class="card blue">
     <div class="label">折合小时</div>
-    <div class="value">{total_hours:.1f}<span class="unit">小时</span></div>
+    <div class="value" id="total-hours">{stats['total_hours']:.1f}<span class="unit">小时</span></div>
   </div>
   <div class="card orange">
     <div class="label">记录总数</div>
-    <div class="value">{total_records}<span class="unit">条</span></div>
+    <div class="value" id="total-records">{stats['total_records']}<span class="unit">条</span></div>
   </div>
   <div class="card purple">
     <div class="label">参与员工 / 覆盖故事</div>
-    <div class="value">{unique_employees}<span class="unit">人</span> / {unique_stories}<span class="unit">个故事</span></div>
+    <div class="value" id="total-unique">{stats['unique_employees']}<span class="unit">人</span> / {stats['unique_stories']}<span class="unit">个故事</span></div>
   </div>
 </div>
-""")
 
-    if total_records == 0:
-        html_parts.append('<div class="empty">暂无时间节省记录数据<br><br>请在完成工作流步骤后记录时间节省数据。</div>')
-    else:
+<div id="empty-tip" class="empty hidden-section">暂无符合条件的时间节省记录<br><br>请调整筛选条件后重新查询。</div>
 
-        # ---- 按员工统计 ----
-        html_parts.append("""
-<div class="section">
-  <h2>按员工统计</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>员工</th>
-        <th>节省时间</th>
-        <th>分布</th>
-        <th>记录数</th>
-        <th>参与故事数</th>
-      </tr>
-    </thead>
-    <tbody>
-""")
-        for emp in sorted(by_employee.keys(), key=lambda e: by_employee[e]["hours"], reverse=True):
-            v = by_employee[emp]
-            bar_width = int(v["hours"] / max_emp_hours * 100) if max_emp_hours > 0 else 0
-            html_parts.append(f"""
-      <tr>
-        <td class="number">{emp}</td>
-        <td>{v['pd']:.1f} 人天 ({v['hours']:.1f} 小时)</td>
-        <td><span class="bar-container"><span class="bar green" style="width: {bar_width}%"></span></span></td>
-        <td>{v['count']}</td>
-        <td>{len(v['stories'])}</td>
-      </tr>
-""")
-        html_parts.append("""
-    </tbody>
-  </table>
+<div id="report-content">
+  <div class="section">
+    <h2>按员工统计</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>员工</th>
+          <th>节省时间</th>
+          <th>分布</th>
+          <th>记录数</th>
+          <th>参与故事数</th>
+        </tr>
+      </thead>
+      <tbody id="employee-tbody">
+        {employee_rows(stats)}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>按工作流步骤统计</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>步骤</th>
+          <th>节省时间</th>
+          <th>分布</th>
+          <th>记录数</th>
+          <th>参与员工数</th>
+        </tr>
+      </thead>
+      <tbody id="step-tbody">
+        {step_rows(stats)}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>按用户故事统计</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>用户故事</th>
+          <th>节省时间</th>
+          <th>分布</th>
+          <th>记录数</th>
+          <th>参与员工</th>
+          <th>覆盖步骤</th>
+        </tr>
+      </thead>
+      <tbody id="story-tbody">
+        {story_rows(stats)}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>按日期趋势</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>日期</th>
+          <th>节省时间</th>
+          <th>分布</th>
+          <th>记录数</th>
+        </tr>
+      </thead>
+      <tbody id="date-tbody">
+        {date_rows(stats)}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>员工 x 步骤 交叉分析（单位：人天）</h2>
+    <table class="cross-table">
+      <thead>
+        <tr>
+          <th>员工</th>
+          {''.join(f'<th>{step}</th>' for step in steps_sorted)}
+          <th>合计</th>
+        </tr>
+      </thead>
+      <tbody id="cross-tbody">
+        {cross_rows(stats)}
+      </tbody>
+    </table>
+  </div>
 </div>
-""")
 
-        # ---- 按步骤统计 ----
-        html_parts.append("""
-<div class="section">
-  <h2>按工作流步骤统计</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>步骤</th>
-        <th>节省时间</th>
-        <th>分布</th>
-        <th>记录数</th>
-        <th>参与员工数</th>
-      </tr>
-    </thead>
-    <tbody>
-""")
-        step_order_sorted = sorted(by_step.keys(), key=lambda s: STEP_ORDER.index(next((c for c, n in STEP_NAMES.items() if n == s), "99")) if any(c for c, n in STEP_NAMES.items() if n == s) else 99)
-        for step in step_order_sorted:
-            v = by_step[step]
-            bar_width = int(v["hours"] / max_step_hours * 100) if max_step_hours > 0 else 0
-            html_parts.append(f"""
-      <tr>
-        <td class="number">{step}</td>
-        <td>{v['pd']:.1f} 人天 ({v['hours']:.1f} 小时)</td>
-        <td><span class="bar-container"><span class="bar blue" style="width: {bar_width}%"></span></span></td>
-        <td>{v['count']}</td>
-        <td>{len(v['employees'])}</td>
-      </tr>
-""")
-        html_parts.append("""
-    </tbody>
-  </table>
-</div>
-""")
-
-        # ---- 按用户故事统计 ----
-        html_parts.append("""
-<div class="section">
-  <h2>按用户故事统计</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>用户故事</th>
-        <th>节省时间</th>
-        <th>分布</th>
-        <th>记录数</th>
-        <th>参与员工</th>
-        <th>覆盖步骤</th>
-      </tr>
-    </thead>
-    <tbody>
-""")
-        for story in sorted(by_story.keys(), key=lambda s: by_story[s]["hours"], reverse=True):
-            v = by_story[story]
-            bar_width = int(v["hours"] / max_story_hours * 100) if max_story_hours > 0 else 0
-            emp_tags = " ".join(f'<span class="tag b">{e}</span>' for e in sorted(v["employees"]))
-            step_tags = " ".join(f'<span class="tag o">{s}</span>' for s in sorted(v["steps"]))
-            html_parts.append(f"""
-      <tr>
-        <td class="number">{story}</td>
-        <td>{v['pd']:.1f} 人天 ({v['hours']:.1f} 小时)</td>
-        <td><span class="bar-container"><span class="bar orange" style="width: {bar_width}%"></span></span></td>
-        <td>{v['count']}</td>
-        <td>{emp_tags}</td>
-        <td>{step_tags}</td>
-      </tr>
-""")
-        html_parts.append("""
-    </tbody>
-  </table>
-</div>
-""")
-
-        # ---- 按日期趋势 ----
-        html_parts.append("""
-<div class="section">
-  <h2>按日期趋势</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>日期</th>
-        <th>节省时间</th>
-        <th>分布</th>
-        <th>记录数</th>
-      </tr>
-    </thead>
-    <tbody>
-""")
-        for date in sorted(by_date.keys()):
-            v = by_date[date]
-            bar_width = int(v["hours"] / max_date_hours * 100) if max_date_hours > 0 else 0
-            html_parts.append(f"""
-      <tr>
-        <td class="number">{date}</td>
-        <td>{v['pd']:.1f} 人天 ({v['hours']:.1f} 小时)</td>
-        <td><span class="bar-container"><span class="bar purple" style="width: {bar_width}%"></span></span></td>
-        <td>{v['count']}</td>
-      </tr>
-""")
-        html_parts.append("""
-    </tbody>
-  </table>
-</div>
-""")
-
-        # ---- 员工 x 步骤 交叉表 ----
-        html_parts.append("""
-<div class="section">
-  <h2>员工 x 步骤 交叉分析（单位：人天）</h2>
-  <table class="cross-table">
-    <thead>
-      <tr>
-        <th>员工</th>
-""")
-        for step in steps_sorted:
-            html_parts.append(f"        <th>{step}</th>\n")
-        html_parts.append("        <th>合计</th>\n      </tr>\n    </thead>\n    <tbody>\n")
-
-        for emp in employees_sorted:
-            row_total = sum(cross_data[emp].values())
-            html_parts.append(f"      <tr>\n        <td class='number'>{emp}</td>\n")
-            for step in steps_sorted:
-                val = cross_data[emp].get(step, 0)
-                html_parts.append(f"        <td>{val:.1f}</td>\n" if val > 0 else "        <td>-</td>\n")
-            html_parts.append(f"        <td class='number'>{row_total:.1f}</td>\n      </tr>\n")
-        html_parts.append("""    </tbody>
-  </table>
-</div>
-""")
-
-    # ---- Footer ----
-    html_parts.append(f"""
 <div class="footer">
   效贷测试专家 · 时间节省分析报告 | 由 generate_time_analytics.py 自动生成 | {now}
 </div>
+
+<script>
+const ALL_RECORDS = {records_json};
+const HOURS_PER_PD = {HOURS_PER_PD};
+const STEP_ORDER = {json.dumps(STEP_ORDER)};
+const STEP_NAMES = {json.dumps(STEP_NAMES, ensure_ascii=False)};
+
+// 为每条记录解析日期维度
+function parseRecordDate(r) {{
+  const dateStr = r.date || "";
+  const parts = dateStr.split("-");
+  r._year = parts[0] || "";
+  r._month = parts[1] || "";
+  r._yearMonth = parts.length >= 2 ? `${{parts[0]}}-${{parts[1]}}` : "";
+  if (r._year && r._month) {{
+    const m = parseInt(r._month, 10);
+    r._quarter = "Q" + (Math.ceil(m / 3));
+    r._yearQuarter = `${{r._year}}-${{r._quarter}}`;
+  }} else {{
+    r._quarter = "";
+    r._yearQuarter = "";
+  }}
+}}
+ALL_RECORDS.forEach(parseRecordDate);
+
+function stepSortKey(s) {{
+  for (const [code, name] of Object.entries(STEP_NAMES)) {{
+    if (name === s) return STEP_ORDER.indexOf(code);
+  }}
+  return 99;
+}}
+
+function computeStats(records) {{
+  const totalRecords = records.length;
+  let totalHours = 0;
+  let totalPd = 0;
+  const byEmployee = {{}};
+  const byStory = {{}};
+  const byStep = {{}};
+  const byDate = {{}};
+  const crossData = {{}};
+
+  function getEmp(emp) {{
+    if (!byEmployee[emp]) byEmployee[emp] = {{ hours: 0, pd: 0, count: 0, stories: new Set() }};
+    return byEmployee[emp];
+  }}
+  function getStory(story) {{
+    if (!byStory[story]) byStory[story] = {{ hours: 0, pd: 0, count: 0, employees: new Set(), steps: new Set() }};
+    return byStory[story];
+  }}
+  function getStep(step) {{
+    if (!byStep[step]) byStep[step] = {{ hours: 0, pd: 0, count: 0, employees: new Set() }};
+    return byStep[step];
+  }}
+  function getDate(date) {{
+    if (!byDate[date]) byDate[date] = {{ hours: 0, pd: 0, count: 0 }};
+    return byDate[date];
+  }}
+
+  for (const r of records) {{
+    const emp = r.employee || "未知";
+    const story = r.user_story || "未知";
+    const step = r.step || "未知";
+    const date = r.date || "未知";
+    const hours = r.total_hours !== undefined ? r.total_hours : (r.time_saved_hours || 0);
+    const pd = r.time_saved_pd || 0;
+
+    totalHours += hours;
+    totalPd += pd;
+
+    const e = getEmp(emp);
+    e.hours += hours;
+    e.pd += pd;
+    e.count += 1;
+    e.stories.add(story);
+
+    const st = getStory(story);
+    st.hours += hours;
+    st.pd += pd;
+    st.count += 1;
+    st.employees.add(emp);
+    st.steps.add(step);
+
+    const sp = getStep(step);
+    sp.hours += hours;
+    sp.pd += pd;
+    sp.count += 1;
+    sp.employees.add(emp);
+
+    const d = getDate(date);
+    d.hours += hours;
+    d.pd += pd;
+    d.count += 1;
+
+    if (!crossData[emp]) crossData[emp] = {{}};
+    if (!crossData[emp][step]) crossData[emp][step] = 0;
+    crossData[emp][step] += hours / HOURS_PER_PD;
+  }}
+
+  // 将 Set 转成 array
+  const byEmployeeOut = {{}};
+  for (const [k, v] of Object.entries(byEmployee)) {{
+    byEmployeeOut[k] = {{ hours: v.hours, pd: v.pd, count: v.count, stories: Array.from(v.stories).sort() }};
+  }}
+  const byStoryOut = {{}};
+  for (const [k, v] of Object.entries(byStory)) {{
+    byStoryOut[k] = {{ hours: v.hours, pd: v.pd, count: v.count, employees: Array.from(v.employees).sort(), steps: Array.from(v.steps).sort() }};
+  }}
+  const byStepOut = {{}};
+  for (const [k, v] of Object.entries(byStep)) {{
+    byStepOut[k] = {{ hours: v.hours, pd: v.pd, count: v.count, employees: Array.from(v.employees).sort() }};
+  }}
+
+  return {{
+    totalRecords,
+    totalHours,
+    totalPd,
+    byEmployee: byEmployeeOut,
+    byStory: byStoryOut,
+    byStep: byStepOut,
+    byDate,
+    crossData,
+    uniqueEmployees: Object.keys(byEmployee).length,
+    uniqueStories: Object.keys(byStory).length,
+  }};
+}}
+
+function filterRecords() {{
+  const globalKw = document.getElementById("filter-global").value.trim().toLowerCase();
+  const employee = document.getElementById("filter-employee").value;
+  const step = document.getElementById("filter-step").value;
+  const dateType = document.getElementById("filter-date-type").value;
+  const dateValue = document.getElementById("filter-date-value").value;
+  const storyKw = document.getElementById("filter-story").value.trim().toLowerCase();
+
+  return ALL_RECORDS.filter(r => {{
+    if (globalKw) {{
+      const text = `${{r.employee || ""}} ${{r.step || ""}} ${{r.user_story || ""}} ${{r.remark || ""}}`.toLowerCase();
+      if (!text.includes(globalKw)) return false;
+    }}
+    if (employee && r.employee !== employee) return false;
+    if (step && r.step !== step) return false;
+    if (storyKw) {{
+      const story = (r.user_story || "").toLowerCase();
+      if (!story.includes(storyKw)) return false;
+    }}
+    if (dateType && dateValue) {{
+      if (dateType === "month" && r._yearMonth !== dateValue) return false;
+      if (dateType === "quarter" && r._yearQuarter !== dateValue) return false;
+      if (dateType === "year" && r._year !== dateValue) return false;
+    }}
+    return true;
+  }});
+}}
+
+function updateDateValueOptions() {{
+  const dateType = document.getElementById("filter-date-type").value;
+  const dateValueSelect = document.getElementById("filter-date-value");
+  dateValueSelect.innerHTML = "";
+  if (!dateType) {{
+    dateValueSelect.disabled = true;
+    dateValueSelect.appendChild(new Option("请先选择日期维度", ""));
+    return;
+  }}
+
+  const values = new Set();
+  for (const r of ALL_RECORDS) {{
+    if (dateType === "month" && r._yearMonth) values.add(r._yearMonth);
+    if (dateType === "quarter" && r._yearQuarter) values.add(r._yearQuarter);
+    if (dateType === "year" && r._year) values.add(r._year);
+  }}
+
+  dateValueSelect.disabled = false;
+  dateValueSelect.appendChild(new Option(`全部${{dateType === "month" ? "月份" : dateType === "quarter" ? "季度" : "年度"}}`, ""));
+  Array.from(values).sort().forEach(v => {{
+    dateValueSelect.appendChild(new Option(v, v));
+  }});
+}}
+
+function renderEmployee(stats) {{
+  const tbody = document.getElementById("employee-tbody");
+  if (Object.keys(stats.byEmployee).length === 0) {{ tbody.innerHTML = ""; return; }}
+  const maxH = Math.max(...Object.values(stats.byEmployee).map(v => v.hours), 1);
+  const emps = Object.keys(stats.byEmployee).sort((a, b) => stats.byEmployee[b].hours - stats.byEmployee[a].hours);
+  tbody.innerHTML = emps.map(emp => {{
+    const v = stats.byEmployee[emp];
+    const w = maxH > 0 ? Math.round(v.hours / maxH * 100) : 0;
+    return `<tr><td class="number">${{emp}}</td><td>${{v.pd.toFixed(1)}} 人天 (${{v.hours.toFixed(1)}} 小时)</td><td><span class="bar-container"><span class="bar green" style="width: ${{w}}%"></span></span></td><td>${{v.count}}</td><td>${{v.stories.length}}</td></tr>`;
+  }}).join("");
+}}
+
+function renderStep(stats) {{
+  const tbody = document.getElementById("step-tbody");
+  if (Object.keys(stats.byStep).length === 0) {{ tbody.innerHTML = ""; return; }}
+  const maxH = Math.max(...Object.values(stats.byStep).map(v => v.hours), 1);
+  const steps = Object.keys(stats.byStep).sort((a, b) => stepSortKey(a) - stepSortKey(b));
+  tbody.innerHTML = steps.map(step => {{
+    const v = stats.byStep[step];
+    const w = maxH > 0 ? Math.round(v.hours / maxH * 100) : 0;
+    return `<tr><td class="number">${{step}}</td><td>${{v.pd.toFixed(1)}} 人天 (${{v.hours.toFixed(1)}} 小时)</td><td><span class="bar-container"><span class="bar blue" style="width: ${{w}}%"></span></span></td><td>${{v.count}}</td><td>${{v.employees.length}}</td></tr>`;
+  }}).join("");
+}}
+
+function renderStory(stats) {{
+  const tbody = document.getElementById("story-tbody");
+  if (Object.keys(stats.byStory).length === 0) {{ tbody.innerHTML = ""; return; }}
+  const maxH = Math.max(...Object.values(stats.byStory).map(v => v.hours), 1);
+  const stories = Object.keys(stats.byStory).sort((a, b) => stats.byStory[b].hours - stats.byStory[a].hours);
+  tbody.innerHTML = stories.map(story => {{
+    const v = stats.byStory[story];
+    const w = maxH > 0 ? Math.round(v.hours / maxH * 100) : 0;
+    const empTags = v.employees.sort().map(e => `<span class="tag b">${{e}}</span>`).join(" ");
+    const stepTags = v.steps.sort().map(s => `<span class="tag o">${{s}}</span>`).join(" ");
+    return `<tr><td class="number">${{story}}</td><td>${{v.pd.toFixed(1)}} 人天 (${{v.hours.toFixed(1)}} 小时)</td><td><span class="bar-container"><span class="bar orange" style="width: ${{w}}%"></span></span></td><td>${{v.count}}</td><td>${{empTags}}</td><td>${{stepTags}}</td></tr>`;
+  }}).join("");
+}}
+
+function renderDate(stats) {{
+  const tbody = document.getElementById("date-tbody");
+  if (Object.keys(stats.byDate).length === 0) {{ tbody.innerHTML = ""; return; }}
+  const maxH = Math.max(...Object.values(stats.byDate).map(v => v.hours), 1);
+  const dates = Object.keys(stats.byDate).sort();
+  tbody.innerHTML = dates.map(date => {{
+    const v = stats.byDate[date];
+    const w = maxH > 0 ? Math.round(v.hours / maxH * 100) : 0;
+    return `<tr><td class="number">${{date}}</td><td>${{v.pd.toFixed(1)}} 人天 (${{v.hours.toFixed(1)}} 小时)</td><td><span class="bar-container"><span class="bar purple" style="width: ${{w}}%"></span></span></td><td>${{v.count}}</td></tr>`;
+  }}).join("");
+}}
+
+function renderCross(stats) {{
+  const theadRow = document.querySelector(".cross-table thead tr");
+  const tbody = document.getElementById("cross-tbody");
+  const emps = Object.keys(stats.byEmployee).sort();
+  const steps = Object.keys(stats.byStep).sort((a, b) => stepSortKey(a) - stepSortKey(b));
+
+  // 表头
+  let headHtml = "<th>员工</th>";
+  for (const step of steps) headHtml += `<th>${{step}}</th>`;
+  headHtml += "<th>合计</th>";
+  theadRow.innerHTML = headHtml;
+
+  if (emps.length === 0) {{ tbody.innerHTML = ""; return; }}
+  tbody.innerHTML = emps.map(emp => {{
+    const rowTotal = Object.values(stats.crossData[emp] || {{}}).reduce((a, b) => a + b, 0);
+    let cells = steps.map(step => {{
+      const val = (stats.crossData[emp] || {{}})[step] || 0;
+      return val > 0 ? `<td>${{val.toFixed(1)}}</td>` : `<td>-</td>`;
+    }}).join("");
+    return `<tr><td class='number'>${{emp}}</td>${{cells}}<td class='number'>${{rowTotal.toFixed(1)}}</td></tr>`;
+  }}).join("");
+}}
+
+function render(stats) {{
+  document.getElementById("total-pd").innerHTML = `${{stats.totalPd.toFixed(1)}}<span class="unit">人天</span>`;
+  document.getElementById("total-hours").innerHTML = `${{stats.totalHours.toFixed(1)}}<span class="unit">小时</span>`;
+  document.getElementById("total-records").innerHTML = `${{stats.totalRecords}}<span class="unit">条</span>`;
+  document.getElementById("total-unique").innerHTML = `${{stats.uniqueEmployees}}<span class="unit">人</span> / ${{stats.uniqueStories}}<span class="unit">个故事</span>`;
+
+  if (stats.totalRecords === 0) {{
+    document.getElementById("report-content").classList.add("hidden-section");
+    document.getElementById("empty-tip").classList.remove("hidden-section");
+    return;
+  }}
+  document.getElementById("report-content").classList.remove("hidden-section");
+  document.getElementById("empty-tip").classList.add("hidden-section");
+
+  renderEmployee(stats);
+  renderStep(stats);
+  renderStory(stats);
+  renderDate(stats);
+  renderCross(stats);
+}}
+
+function applyFilters() {{
+  const filtered = filterRecords();
+  const stats = computeStats(filtered);
+  render(stats);
+
+  const status = document.getElementById("filter-status");
+  status.innerHTML = `当前共筛选出 <strong>${{filtered.length}}</strong> 条记录 / 全部 <strong>${{ALL_RECORDS.length}}</strong> 条`;
+}}
+
+function resetFilters() {{
+  document.getElementById("filter-global").value = "";
+  document.getElementById("filter-employee").value = "";
+  document.getElementById("filter-step").value = "";
+  document.getElementById("filter-date-type").value = "";
+  document.getElementById("filter-story").value = "";
+  updateDateValueOptions();
+  applyFilters();
+}}
+
+// 监听日期维度变化，动态更新日期值选项
+document.getElementById("filter-date-type").addEventListener("change", updateDateValueOptions);
+
+// 监听回车键触发查询
+document.querySelectorAll(".filter-item input").forEach(input => {{
+  input.addEventListener("keypress", e => {{ if (e.key === "Enter") applyFilters(); }});
+}});
+</script>
+
 </body>
 </html>
-""")
+"""
 
-    html_content = "\n".join(html_parts)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
     print(f"HTML 分析报告已生成: {output_path}")
