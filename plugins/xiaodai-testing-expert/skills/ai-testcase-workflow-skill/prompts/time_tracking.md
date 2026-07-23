@@ -149,9 +149,11 @@
 
 ### 第 4 步：写入数据（JSONL 兜底 + 云端实时同步）
 
-用户确认后，**立即同时执行以下两步**（不分先后，都不可跳过）：
+用户确认后，**立即执行以下三步**（都不可跳过）：
 
 #### 4a. 写入本地 JSONL（兜底）
+
+调用 `record_time_saved.py` 脚本，**必须捕获其完整标准输出**（stdout）：
 
 ```bash
 python scripts/record_time_saved.py \
@@ -166,90 +168,64 @@ python scripts/record_time_saved.py \
 
 > 如果用户用的是人天，则用 `--person-days {人天数}` 代替 `--hours`。脚本内部自动换算为小时存储。
 
-#### 4b. 实时同步到腾讯文档智能表格（cloud 模式，与 4a 同时执行）
+#### 4b. 实时同步到腾讯文档智能表格（cloud 模式）
 
-读取 `config/time_tracking_config.yaml` 中的 `tencent_docs.doc_id`、`tencent_docs.sheet_id` 和 `tencent_docs.field_mapping`。
+仅当 `config/time_tracking_config.yaml` 中 `storage_mode="cloud"` 时执行。
 
-调用 MCP 工具 **`mcp__tencent-docs__smartsheet.add_records`**，按以下结构构造参数：
+**严禁手动构造 `add_records` 参数**。必须从 4a 脚本输出的 stdout 中**精确提取**以 `CLOUD_SYNC_JSON: ` 开头的那一行，将该行之后的 JSON 直接作为参数调用 MCP 工具 **`mcp__tencent-docs__smartsheet.add_records`**。
+
+提取示例：
+
+```
+脚本输出：
+  ...
+  CLOUD_SYNC_JSON: {"file_id": "NJsgqBKwrNux", "sheet_id": "t00i2h", "records": [{...}]}
+
+提取后的 add_records 入参：
+  {"file_id": "NJsgqBKwrNux", "sheet_id": "t00i2h", "records": [{...}]}
+```
+
+**调用要求**：
+- 必须原样传递脚本输出的 JSON，**不得重新拼接字段、不得省略字段、不得修改字段名**
+- `records[0].field_values` 必须包含：员工姓名、用户故事、步骤、步骤编码、节省小时数、节省人天数、折算总小时、业务线（备注非空时追加）
+- 如果 4a 输出中没有 `CLOUD_SYNC_JSON:` 行，说明 storage_mode 不是 cloud 或配置缺失，**跳过 4b 和 4c**，并在确认信息中标注"⚠️ 未启用云端同步，仅本地已记录"
+
+**同步结果处理**：
+- **成功**：继续执行 4c 验证
+- **失败**（连接器未连接 / MCP 调用报错）：**不阻塞工作流**，本地 JSONL 已有记录（4a 兜底），在确认信息中标注"⚠️ 智能表格同步失败（{错误信息}），本地已记录。请检查腾讯文档连接器是否已连接。"
+
+#### 4c. 同步后验证（cloud 模式，v4 新增）
+
+调用 `add_records` 成功后，**必须立即调用 `mcp__tencent-docs__smartsheet.list_records`** 验证数据确实写入：
 
 ```json
 {
   "file_id": "{doc_id}",
   "sheet_id": "{sheet_id}",
-  "records": [
-    {
-      "field_values": [
-        {
-          "field": "员工姓名",
-          "text_value": {
-            "items": [{"text": "{员工姓名}", "type": "text"}]
-          }
-        },
-        {
-          "field": "用户故事",
-          "text_value": {
-            "items": [{"text": "{用户故事}", "type": "text"}]
-          }
-        },
-        {
-          "field": "步骤",
-          "text_value": {
-            "items": [{"text": "{步骤名称}", "type": "text"}]
-          }
-        },
-        {
-          "field": "步骤编码",
-          "text_value": {
-            "items": [{"text": "{步骤代码}", "type": "text"}]
-          }
-        },
-        {
-          "field": "节省小时数",
-          "number_value": {hours}
-        },
-        {
-          "field": "节省人天数",
-          "number_value": {person_days}
-        },
-        {
-          "field": "折算总小时",
-          "number_value": {total_hours}
-        },
-        {
-          "field": "业务线",
-          "text_value": {
-            "items": [{"text": "效贷", "type": "text"}]
-          }
-        }
-      ]
-    }
-  ]
+  "limit": 5
 }
 ```
 
-> **字段说明**：
-> - `{hours}` = 换算后的小时数（数字，如 `4.0`）
-> - `{person_days}` = 换算后的人天数（数字，如 `0.5`）
-> - `{total_hours}` = 总小时数（与 hours 相同，数字，如 `4.0`）
-> - 「记录时间」字段已配置 `auto_fill=true`，创建记录时自动填充当前时间，**不需要传值**
-> - 如果「备注」非空，在 `field_values` 数组末尾追加：`{"field": "备注", "text_value": {"items": [{"text": "{备注内容}", "type": "text"}]}}`
-> - 如果「备注」为空，跳过此字段
-
-**同步结果处理**：
-- **成功**：继续执行第 5 步确认记录，在确认信息中标注"📡 已实时同步到团队智能表格"
-- **失败**（连接器未连接 / MCP 调用报错）：**不阻塞工作流**，本地 JSONL 已有记录（4a 兜底），在确认信息中标注"⚠️ 智能表格同步失败（{错误信息}），本地已记录。请检查腾讯文档连接器是否已连接。"
+**验证规则**：
+- 在最近 1 分钟内新增的记录中，检查是否存在与本次记录匹配的「员工姓名」和「用户故事」
+- **验证通过**：继续执行第 5 步，标注"📡 已实时同步到团队智能表格"
+- **验证失败**（新记录为空或不匹配）：**必须重试一次 4b**（重新从脚本输出中提取 `CLOUD_SYNC_JSON` 并调用 `add_records`）
+  - 重试后再次执行 4c 验证
+  - 若仍失败：不阻塞工作流，在确认信息中标注"⚠️ 智能表格同步写入异常（验证未通过），本地已记录。请联系管理员检查表格字段配置。"
 
 ### 第 5 步：确认记录
+
+**根据 4b/4c 的结果显示对应状态**：
 
 ```
 ✅ 已记录：{员工} 在 {用户故事} 的 {步骤名称} 环节节省了 {hours} 小时（{person_days} 人天）。
    📡 已实时同步到团队智能表格。
 ```
 
-> 如果 4b 同步失败，则显示：
+> 如果 4b 同步失败或 4c 验证连续两次未通过，则显示：
 > ```
 > ✅ 已记录：{员工} 在 {用户故事} 的 {步骤名称} 环节节省了 {hours} 小时（{person_days} 人天）。
->    ⚠️ 智能表格同步失败（{错误信息}），本地已记录。请检查腾讯文档连接器是否已连接。
+>    ⚠️ 智能表格同步异常（{错误信息}），本地已记录。请检查腾讯文档连接器是否已连接，或联系管理员检查表格字段配置。
 > ```
 
 ---

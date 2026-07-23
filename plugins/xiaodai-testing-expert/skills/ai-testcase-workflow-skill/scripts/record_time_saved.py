@@ -230,6 +230,14 @@ def record(
     except Exception as e:
         print(f"⚠️  Excel 同步失败（不影响本地记录）: {e}", file=sys.stderr)
 
+    # Cloud 同步 JSON 输出（storage_mode=cloud 时，AI 提取后调用 MCP）
+    try:
+        cloud_sync_json = build_cloud_sync_json(record, biz_line)
+        if cloud_sync_json:
+            print("CLOUD_SYNC_JSON: " + json.dumps(cloud_sync_json, ensure_ascii=False))
+    except Exception as e:
+        print(f"⚠️  Cloud 同步 JSON 构造失败（不影响本地记录）: {e}", file=sys.stderr)
+
     return record
 
 
@@ -275,6 +283,75 @@ def sync_to_excel_if_configured(record: dict, biz_line: str):
     from sync_to_excel import append_record_to_excel
     append_record_to_excel(excel_path, record)
     print(f"📊 已同步到 Excel: {excel_path}")
+
+
+def build_cloud_sync_json(record: dict, biz_line: str) -> dict:
+    """如果配置了 cloud 存储模式，构造 mcp__tencent-docs__smartsheet.add_records 的参数 JSON
+
+    返回的 dict 可以直接作为 add_records 的入参（包含 file_id / sheet_id / records）。
+    脚本本身不调用 MCP，仅输出 JSON 供 AI 提取并转发。
+    """
+    config = load_tracking_config()
+    storage_mode = config.get("storage_mode", "local")
+
+    if storage_mode != "cloud":
+        return None
+
+    tencent_config = config.get("tencent_docs", {})
+    file_id = tencent_config.get("doc_id", "")
+    sheet_id = tencent_config.get("sheet_id", "")
+
+    if not file_id or not sheet_id:
+        print("⚠️  storage_mode=cloud 但未配置 tencent_docs.doc_id/sheet_id，跳过 Cloud 同步 JSON 构造", file=sys.stderr)
+        return None
+
+    field_mapping = tencent_config.get("field_mapping", [])
+
+    # 根据 field_mapping 构造 field_values
+    field_values = []
+    for mapping in field_mapping:
+        json_key = mapping.get("json_key", "")
+        field_name = mapping.get("field", "")
+        value_type = mapping.get("value_type", "text_value")
+        optional = mapping.get("optional", False)
+
+        if not json_key or not field_name:
+            continue
+
+        value = record.get(json_key, "")
+        if value == "" and optional:
+            continue
+
+        if value_type == "text_value":
+            field_values.append({
+                "field": field_name,
+                "text_value": {
+                    "items": [{"text": str(value), "type": "text"}]
+                }
+            })
+        elif value_type == "number_value":
+            try:
+                num_value = float(value) if value != "" else 0.0
+            except (ValueError, TypeError):
+                num_value = 0.0
+            field_values.append({
+                "field": field_name,
+                "number_value": num_value
+            })
+        else:
+            # 其他类型统一按 text 处理
+            field_values.append({
+                "field": field_name,
+                "text_value": {
+                    "items": [{"text": str(value), "type": "text"}]
+                }
+            })
+
+    return {
+        "file_id": file_id,
+        "sheet_id": sheet_id,
+        "records": [{"field_values": field_values}]
+    }
 
 
 def main():
