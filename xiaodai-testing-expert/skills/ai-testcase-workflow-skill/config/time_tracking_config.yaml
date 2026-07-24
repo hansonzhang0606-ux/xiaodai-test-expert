@@ -1,0 +1,162 @@
+# 时间节省追踪配置
+# 控制时间追踪的存储模式、参考时间、智能表格对接
+
+# ============================================================
+# 存储模式
+# ============================================================
+# local:  仅本地 JSONL（默认，无集中存储）
+# excel:  本地 JSONL + Excel 文件（管理员分发或共享目录）
+# cloud:  腾讯文档智能表格为主 + 本地 JSONL 兜底
+storage_mode: "cloud"
+
+# ============================================================
+# 本地存储路径（relative to ~/.workbuddy/data/）
+# ============================================================
+local_storage:
+  dir: "time-tracking/效贷"
+  records_file: "records.jsonl"
+  report_file: "time_analytics_效贷.html"
+  csv_file: "time_analytics_效贷.csv"
+
+# ============================================================
+# Excel 集中存储配置（storage_mode=excel 时生效，当前未启用）
+# ============================================================
+# ⚠️ 当前 storage_mode=cloud，以下 Excel 配置已废弃，仅保留供切回 excel 模式时参考。
+# 如需切回 Excel 模式：将 storage_mode 改为 "excel"，确保 file_path 指向有效文件。
+# excel:
+#   file_path: "D:/##AI转型/workbuddy专家数据/效贷功能测试专家-节省时间数据记录.xlsx"
+#   sheet_name: "效贷时间追踪表"
+excel:
+  file_path: ""
+  sheet_name: "效贷时间追踪表"
+
+# ============================================================
+# 腾讯文档智能表格配置（storage_mode=cloud 时生效）
+# ============================================================
+# 首次使用时 Agent 通过 tencent-docs skill 创建智能表格，
+# 创建后将 doc_id 填入下方，后续所有员工共享此表格。
+# 需要企业账号腾讯文档管理员授权开通。
+tencent_docs:
+  doc_id: "NJsgqBKwrNux"              # 智能表格文档ID
+  doc_url: "https://docs.qq.com/smartsheet/DTkpzZ3FCS3dyTnV4"
+  sheet_id: "t00i2h"                   # 工作表ID
+  sheet_name: "效贷时间追踪表"
+  # 字段定义见 config/smartsheet_template.yaml
+  # 已创建字段：记录时间/员工姓名/用户故事/步骤/步骤编码/节省小时数/节省人天数/折算总小时/业务线/备注
+  #
+  # 使用说明：
+  # - 管理员需将此表格分享给全体团队成员（吴香康、周峰、何甜），授予编辑权限
+  # - 每位测试人员的 WorkBuddy 也需连接腾讯文档连接器（tencent-docs）
+  # - 测试人员完成步骤后，AI 自动追加一行数据到此表格
+  # - 管理员说"查看时间统计"时，AI 从此表格读取全量数据生成报告
+
+  # ============================================================
+  # HTML 报告上传配置（cloud 模式生效）
+  # ============================================================
+  # 每次生成 time_analytics_效贷.html 后，AI 会将其打包成 .aipage 并导入腾讯文档
+  # 作为 smartpage（HTML 演示文稿）存放到【我的文档】，方便测试人员随时在线打开。
+  # 首次上传后，report_file_id 和 report_url 会自动回填，后续生成会覆盖更新同一文件。
+  report_file_id: ""                    # 已上传报告的腾讯文档 file_id（首次上传后自动回填）
+  report_url: ""                        # 已上传报告的在线访问链接（首次上传后自动回填）
+  report_title: "效贷时间节省统计报告"    # 上传后在腾讯文档中显示的文件标题
+  # Tencent Docs skill 目录，用于定位 aipage_pack.js 打包脚本
+  skill_dir: "~/.workbuddy/skills/skill_2053084036212973568"
+
+  # ============================================================
+  # 字段映射（AI 追加记录时使用，field = 智能表格列标题）
+  # ============================================================
+  # record_time_saved.py 输出的 JSON key → 智能表格列标题 + 值类型
+  # 值类型：text_value / number_value / string_value
+  # 「记录时间」列已配置 auto_fill=true，创建记录时自动填充，无需传值
+  field_mapping:
+    - json_key: "employee"
+      field: "员工姓名"
+      value_type: "text_value"
+    - json_key: "user_story"
+      field: "用户故事"
+      value_type: "text_value"
+    - json_key: "step"
+      field: "步骤"
+      value_type: "text_value"
+    - json_key: "step_code"
+      field: "步骤编码"
+      value_type: "text_value"
+    - json_key: "time_saved_hours"
+      field: "节省小时数"
+      value_type: "number_value"
+    - json_key: "time_saved_pd"
+      field: "节省人天数"
+      value_type: "number_value"
+    - json_key: "total_hours"
+      field: "折算总小时"
+      value_type: "number_value"
+    - json_key: "biz_line"
+      field: "业务线"
+      value_type: "text_value"
+    - json_key: "remark"
+      field: "备注"
+      value_type: "text_value"
+      optional: true                    # 空值时跳过此字段
+
+# ============================================================
+# 参考时间表（每步完成后展示给员工参考）
+# 员工可采纳参考值，也可自行反馈实际节省时间
+# ============================================================
+reference_times:
+  - step_code: "01"
+    step_name: "文档整理"
+    min_hours: 2.0
+    max_hours: 4.0
+    unit: "小时"
+    basis: "按文档数量浮动，5个以上文档取上限"
+
+  - step_code: "02"
+    step_name: "需求评审"
+    min_hours: 2.0
+    max_hours: 3.0
+    unit: "小时"
+    basis: "6维度评审（完整性/一致性/边界/异常/优先级/可测性）"
+
+  - step_code: "04"
+    step_name: "生成测试点"
+    min_hours: 3.0
+    max_hours: 5.0
+    unit: "小时"
+    basis: "按需求复杂度浮动，涉及多系统交互取上限"
+
+  - step_code: "06"
+    step_name: "生成用例"
+    min_hours: 4.0
+    max_hours: 8.0
+    unit: "小时"
+    basis: "按用例数量浮动，100条以上取上限，可用人天"
+
+  - step_code: "07"
+    step_name: "入库知识库"
+    min_hours: 1.0
+    max_hours: 2.0
+    unit: "小时"
+    basis: "总结+差异对比+精华提炼+归档"
+
+# ============================================================
+# 强制规则
+# ============================================================
+rules:
+  mandatory: true                     # 每步必须反馈，不可跳过
+  allow_skip: false                   # 不允许跳过
+  require_confirmation: true          # v3: 保存前必须二次确认
+  unit_options:                       # 员工可用的反馈单位
+    - "小时"
+    - "人天"
+  person_day_to_hours: 8.0           # 1人天 = 8小时
+  storage_unit: "hours"              # v3: 底层存储统一为小时
+  display_unit: "person_days"        # v3: 报告展示以人天为主
+
+# ============================================================
+# 会话缓存
+# ============================================================
+session_cache:
+  cache_fields:                       # 首次填写后缓存，后续步骤无需重复
+    - employee
+    - user_story
+  cache_duration: "session"           # 会话级缓存

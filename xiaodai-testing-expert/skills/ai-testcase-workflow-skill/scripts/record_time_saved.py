@@ -1,0 +1,389 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+时间节省记录脚本 v3
+在工作流每个步骤完成后，记录该步骤为人类员工节省了多少时间。
+
+v3 改进:
+  - 二次确认：脚本仅负责记录，确认逻辑由 AI 在调用前完成
+  - 统一存储单位：底层始终以小时存储，time_saved_pd 为换算值
+  - Excel 同步：storage_mode=excel 时自动追加到 Excel 文件
+  - 花名册校验 + 参考时间展示
+
+用法:
+  python record_time_saved.py \
+    --employee "吴香康" \
+    --user-story "US-001-贷款审批流程优化" \
+    --step "文档整理" \
+    --step-code "01" \
+    --hours 4.0 \
+    --biz-line "效贷" \
+    --remark "原本需要手动整理5个文档"
+
+  # 也可以用人天为单位输入，脚本自动换算为小时存储
+  python record_time_saved.py \
+    --employee "周峰" \
+    --user-story "US-001" \
+    --step "生成用例" \
+    --step-code "06" \
+    --person-days 1.5 \
+    --biz-line "效贷"
+
+数据存储位置:
+  ~/.workbuddy/data/time-tracking/{biz_line}/records.jsonl
+  （excel 模式下同时写入配置指定的 Excel 文件）
+"""
+
+import argparse
+import json
+import os
+import sys
+from datetime import datetime, timezone, timedelta
+
+
+# 步骤代码映射
+STEP_MAP = {
+    "01": "文档整理",
+    "02": "需求评审",
+    "04": "生成测试点",
+    "06": "生成用例",
+    "07": "入库知识库",
+}
+
+# 参考时间表
+REFERENCE_TIMES = {
+    "01": {"min": 2.0, "max": 4.0, "unit": "小时", "basis": "按文档数量浮动，5个以上取上限"},
+    "02": {"min": 2.0, "max": 3.0, "unit": "小时", "basis": "6维度评审（完整性/一致性/边界/异常/优先级/可测性）"},
+    "04": {"min": 3.0, "max": 5.0, "unit": "小时", "basis": "按需求复杂度浮动，多系统交互取上限"},
+    "06": {"min": 4.0, "max": 8.0, "unit": "小时", "basis": "按用例数量浮动，100条以上取上限，可用人天"},
+    "07": {"min": 1.0, "max": 2.0, "unit": "小时", "basis": "总结+差异对比+精华提炼+归档"},
+}
+
+# 人天换算（1人天 = 8小时）
+HOURS_PER_PD = 8.0
+
+# 花名册缓存
+_roster_cache = None
+
+
+def get_skill_dir() -> str:
+    """获取 skill 根目录"""
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def load_team_roster() -> dict:
+    """加载花名册"""
+    global _roster_cache
+    if _roster_cache is not None:
+        return _roster_cache
+
+    roster_path = os.path.join(get_skill_dir(), "config", "team_roster.yaml")
+    if not os.path.exists(roster_path):
+        _roster_cache = {"members": []}
+        return _roster_cache
+
+    # 简单 YAML 解析（避免 PyYAML 依赖）
+    try:
+        import yaml
+        with open(roster_path, "r", encoding="utf-8") as f:
+            _roster_cache = yaml.safe_load(f)
+        return _roster_cache
+    except ImportError:
+        # 无 PyYAML 时用简易解析
+        members = []
+        current = {}
+        with open(roster_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.rstrip()
+                if line.strip().startswith("- name:"):
+                    if current:
+                        members.append(current)
+                    current = {"name": line.split(":", 1)[1].strip().strip('"')}
+                elif "role:" in line and current:
+                    current["role"] = line.split(":", 1)[1].strip().strip('"')
+                elif "active:" in line and current:
+                    current["active"] = line.split(":", 1)[1].strip().strip('"').lower() == "true"
+            if current:
+                members.append(current)
+        _roster_cache = {"members": members}
+        return _roster_cache
+
+
+def validate_employee(employee: str) -> tuple:
+    """校验员工是否在花名册中"""
+    roster = load_team_roster()
+    members = roster.get("members", [])
+    active_names = [m["name"] for m in members if m.get("active", True)]
+    all_names = [m["name"] for m in members]
+
+    if employee in active_names:
+        return True, "在职"
+    elif employee in all_names:
+        return False, "已离职/停用"
+    else:
+        return False, "不在花名册中"
+
+
+def get_data_dir(biz_line: str) -> str:
+    """获取数据存储目录，不存在则创建"""
+    home = os.path.expanduser("~")
+    data_dir = os.path.join(home, ".workbuddy", "data", "time-tracking", biz_line)
+    os.makedirs(data_dir, exist_ok=True)
+    return data_dir
+
+
+def get_records_path(biz_line: str) -> str:
+    """获取 records.jsonl 文件路径"""
+    return os.path.join(get_data_dir(biz_line), "records.jsonl")
+
+
+def record(
+    employee: str,
+    user_story: str,
+    step: str,
+    step_code: str,
+    hours: float = None,
+    person_days: float = None,
+    biz_line: str = "效贷",
+    remark: str = "",
+    skip_validation: bool = False,
+):
+    """记录一条时间节省数据"""
+    # 花名册校验
+    if not skip_validation:
+        valid, status = validate_employee(employee)
+        if not valid and status == "不在花名册中":
+            print(f"⚠️  警告：员工 '{employee}' 不在效贷花名册中。", file=sys.stderr)
+            print(f"   花名册在职人员：{', '.join(m['name'] for m in load_team_roster().get('members', []) if m.get('active', True))}", file=sys.stderr)
+            print(f"   如确为此员工，请联系管理员添加到 config/team_roster.yaml", file=sys.stderr)
+            print(f"   本次记录仍会保存，但建议核实。", file=sys.stderr)
+        elif not valid and status == "已离职/停用":
+            print(f"⚠️  警告：员工 '{employee}' 在花名册中标记为停用。", file=sys.stderr)
+
+    # 统一换算为小时（v3：底层存储始终为小时）
+    time_hours = 0.0
+    time_pd = 0.0
+
+    if hours is not None:
+        time_hours += float(hours)
+    if person_days is not None:
+        time_pd += float(person_days)
+
+    # 人天换算为小时，统一以小时为基准
+    total_hours = round(time_hours + time_pd * HOURS_PER_PD, 2)
+    # 人天 = 总小时 / 8
+    time_pd = round(total_hours / HOURS_PER_PD, 2)
+    time_hours = total_hours
+
+    # 自动补全步骤名称
+    if step_code and not step:
+        step = STEP_MAP.get(step_code, step_code)
+    if step and not step_code:
+        for code, name in STEP_MAP.items():
+            if name == step:
+                step_code = code
+                break
+
+    now = datetime.now(timezone(timedelta(hours=8)))
+
+    record = {
+        "timestamp": now.isoformat(),
+        "date": now.strftime("%Y-%m-%d"),
+        "biz_line": biz_line,
+        "employee": employee,
+        "user_story": user_story,
+        "step": step,
+        "step_code": step_code,
+        "time_saved_hours": time_hours,
+        "time_saved_pd": time_pd,
+        "total_hours": total_hours,
+        "remark": remark,
+    }
+
+    records_path = get_records_path(biz_line)
+
+    with open(records_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    # 输出参考时间
+    ref = REFERENCE_TIMES.get(step_code, {})
+    ref_str = ""
+    if ref:
+        ref_str = f"   参考时间: {ref['min']}~{ref['max']} {ref['unit']}（{ref['basis']}）\n"
+
+    print(f"✅ 已记录时间节省数据")
+    print(f"   员工: {employee}")
+    print(f"   用户故事: {user_story}")
+    print(f"   步骤: {step} ({step_code})")
+    print(f"   节省时间: {time_pd} 人天（{time_hours} 小时）")
+    print(f"   存储单位: 小时（{total_hours}h）")
+    print(f"   业务线: {biz_line}")
+    if ref_str:
+        print(ref_str, end="")
+    if remark:
+        print(f"   备注: {remark}")
+    print(f"   存储位置: {records_path}")
+
+    # Excel 同步（storage_mode=excel 时）
+    try:
+        sync_to_excel_if_configured(record, biz_line)
+    except Exception as e:
+        print(f"⚠️  Excel 同步失败（不影响本地记录）: {e}", file=sys.stderr)
+
+    # Cloud 同步 JSON 输出（storage_mode=cloud 时，AI 提取后调用 MCP）
+    try:
+        cloud_sync_json = build_cloud_sync_json(record, biz_line)
+        if cloud_sync_json:
+            print("CLOUD_SYNC_JSON: " + json.dumps(cloud_sync_json, ensure_ascii=False))
+    except Exception as e:
+        print(f"⚠️  Cloud 同步 JSON 构造失败（不影响本地记录）: {e}", file=sys.stderr)
+
+    return record
+
+
+def load_tracking_config() -> dict:
+    """加载时间追踪配置"""
+    config_path = os.path.join(get_skill_dir(), "config", "time_tracking_config.yaml")
+    if not os.path.exists(config_path):
+        return {}
+    try:
+        import yaml
+        with open(config_path, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+    except ImportError:
+        # 简易解析
+        config = {}
+        with open(config_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("storage_mode:"):
+                    config["storage_mode"] = line.split(":", 1)[1].strip().strip('"')
+        return config
+
+
+def sync_to_excel_if_configured(record: dict, biz_line: str):
+    """如果配置了 excel 存储模式，将记录追加到 Excel"""
+    config = load_tracking_config()
+    storage_mode = config.get("storage_mode", "local")
+
+    if storage_mode != "excel":
+        return
+
+    excel_config = config.get("excel", {})
+    excel_path = excel_config.get("file_path", "")
+
+    if not excel_path:
+        print("⚠️  storage_mode=excel 但未配置 excel.file_path，跳过 Excel 同步", file=sys.stderr)
+        return
+
+    # 展开 ~ 为用户主目录
+    excel_path = os.path.expanduser(excel_path)
+
+    # 调用 sync_to_excel 的追加逻辑
+    from sync_to_excel import append_record_to_excel
+    append_record_to_excel(excel_path, record)
+    print(f"📊 已同步到 Excel: {excel_path}")
+
+
+def build_cloud_sync_json(record: dict, biz_line: str) -> dict:
+    """如果配置了 cloud 存储模式，构造 mcp__tencent-docs__smartsheet.add_records 的参数 JSON
+
+    返回的 dict 可以直接作为 add_records 的入参（包含 file_id / sheet_id / records）。
+    脚本本身不调用 MCP，仅输出 JSON 供 AI 提取并转发。
+    """
+    config = load_tracking_config()
+    storage_mode = config.get("storage_mode", "local")
+
+    if storage_mode != "cloud":
+        return None
+
+    tencent_config = config.get("tencent_docs", {})
+    file_id = tencent_config.get("doc_id", "")
+    sheet_id = tencent_config.get("sheet_id", "")
+
+    if not file_id or not sheet_id:
+        print("⚠️  storage_mode=cloud 但未配置 tencent_docs.doc_id/sheet_id，跳过 Cloud 同步 JSON 构造", file=sys.stderr)
+        return None
+
+    field_mapping = tencent_config.get("field_mapping", [])
+
+    # 根据 field_mapping 构造 field_values
+    field_values = []
+    for mapping in field_mapping:
+        json_key = mapping.get("json_key", "")
+        field_name = mapping.get("field", "")
+        value_type = mapping.get("value_type", "text_value")
+        optional = mapping.get("optional", False)
+
+        if not json_key or not field_name:
+            continue
+
+        value = record.get(json_key, "")
+        if value == "" and optional:
+            continue
+
+        if value_type == "text_value":
+            field_values.append({
+                "field": field_name,
+                "text_value": {
+                    "items": [{"text": str(value), "type": "text"}]
+                }
+            })
+        elif value_type == "number_value":
+            try:
+                num_value = float(value) if value != "" else 0.0
+            except (ValueError, TypeError):
+                num_value = 0.0
+            field_values.append({
+                "field": field_name,
+                "number_value": num_value
+            })
+        else:
+            # 其他类型统一按 text 处理
+            field_values.append({
+                "field": field_name,
+                "text_value": {
+                    "items": [{"text": str(value), "type": "text"}]
+                }
+            })
+
+    return {
+        "file_id": file_id,
+        "sheet_id": sheet_id,
+        "records": [{"field_values": field_values}]
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="记录时间节省数据 v2")
+    parser.add_argument("--employee", required=True, help="员工姓名（需在花名册中）")
+    parser.add_argument("--user-story", required=True, help="用户故事名称/编号")
+    parser.add_argument("--step", default="", help="步骤名称（如：文档整理）")
+    parser.add_argument("--step-code", default="", help="步骤代码（01/02/04/06/07）")
+    parser.add_argument("--hours", type=float, default=None, help="节省时间（小时）")
+    parser.add_argument("--person-days", type=float, default=None, help="节省时间（人天）")
+    parser.add_argument("--biz-line", default="效贷", help="业务线（默认：效贷）")
+    parser.add_argument("--remark", default="", help="备注")
+    parser.add_argument("--skip-validation", action="store_true", help="跳过花名册校验")
+
+    args = parser.parse_args()
+
+    if args.hours is None and args.person_days is None:
+        print("错误：必须指定 --hours 或 --person-days", file=sys.stderr)
+        sys.exit(1)
+
+    record(
+        employee=args.employee,
+        user_story=args.user_story,
+        step=args.step,
+        step_code=args.step_code,
+        hours=args.hours,
+        person_days=args.person_days,
+        biz_line=args.biz_line,
+        remark=args.remark,
+        skip_validation=args.skip_validation,
+    )
+
+
+if __name__ == "__main__":
+    main()

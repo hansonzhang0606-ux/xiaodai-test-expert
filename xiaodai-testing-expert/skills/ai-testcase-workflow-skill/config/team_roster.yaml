@@ -1,0 +1,32 @@
+# 效贷业务线测试人员花名册
+# Agent 启动时读取此文件，通过盲输入+精确匹配验证用户身份
+# 不展示列表，用户输入姓名后与 active: true 的成员匹配
+# 匹配失败则拒绝使用，无 fallback 选项
+
+biz_line: "效贷"
+
+members:
+  - name: "吴香康"
+    role: "功能测试"
+    employee_id: ""        # 工号，后续补充
+    active: true
+
+  - name: "周峰"
+    role: "功能测试"
+    employee_id: ""
+    active: true
+
+  - name: "何甜"
+    role: "功能测试"
+    employee_id: ""
+    active: true
+
+  - name: "张云星"
+    role: "功能测试"
+    employee_id: ""
+    active: true
+
+# 花名册维护说明：
+# 1. 新增人员：在 members 下添加新条目，name 和 role 必填
+# 2. 人员离职：将 active 设为 false，不要直接删除（保留历史数据可追溯）
+# 3. employee_id 为选填，后续有工号信息时补充
