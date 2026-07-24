@@ -1,7 +1,7 @@
 {
   "name": "xiaodai-testing-expert",
-  "version": "1.4.3",
-  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0: user story directory auto-management (D:\\效贷-产品需求\\{编号}-{名称}), cloud sync fix (script-generated JSON forwarded to Tencent Docs), updated defaultInitPrompt and quickPrompts. v1.4.1: HTML analytics report auto-uploaded to Tencent Docs My Documents via aipage/smartpage. v1.4.2: strengthened 'view time-saving stats' workflow to always generate/present/upload HTML report; added step-number prefixes (1/2/4/6) to output files for clear stage identification. v1.4.3: 'view time-saving stats' response now includes local HTML path AND Tencent Docs navigation hint (More > My Files > Task Results).",
+  "version": "1.4.4",
+  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0: user story directory auto-management (D:\\效贷-产品需求\\{编号}-{名称}), cloud sync fix (script-generated JSON forwarded to Tencent Docs), updated defaultInitPrompt and quickPrompts. v1.4.1: HTML analytics report auto-uploaded to Tencent Docs My Documents via aipage/smartpage. v1.4.2: strengthened 'view time-saving stats' workflow to always generate/present/upload HTML report; added step-number prefixes (1/2/4/6) to output files for clear stage identification. v1.4.3: 'view time-saving stats' response now includes local HTML path AND Tencent Docs navigation hint (More > My Files > Task Results). v1.4.4: auto-detect viewer role — testers get personal cumulative report (all stories, all steps) with --person filter; admins get business-line all-testers report; JS filter panel supports queries by employee/step/date(month/quarter/year)/story.",
   "author": {
     "name": "Quality Management Team",
     "email": "qa@kingdee.com"
@@ -23,8 +23,8 @@
     "zh": "效贷功能测试专家"
   },
   "displayDescription": {
-    "en": "[v1.4.3] Xiaodai testing expert with end-to-end pipeline: requirement consolidation (local directory or Confluence page), review, test point generation, case refinement, knowledge archiving, and mandatory time-saving tracking with team roster. HTML report always generated, presented, and uploaded to Tencent Docs My Documents. Output files use step-number prefixes (1/2/4/6) for clear stage identification. Time-saving stats response now includes local HTML path and Tencent Docs navigation hint (More > My Files > Task Results).",
-    "zh": "【v1.4.3】效贷业务线功能测试专家，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库的端到端流水线。内置花名册盲输入身份验证、强制时间节省追踪（二次确认+腾讯文档智能表格同步+用户故事目录自动管理），查看统计时强制生成、展示并上传 HTML 报告到腾讯文档【我的文档】。各步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤。查看统计回复同步告知本地 HTML 路径与腾讯文档导航路径（更多 > 我的文件 > 任务成果）。"
+    "en": "[v1.4.4] Xiaodai testing expert with end-to-end pipeline: requirement consolidation (local directory or Confluence page), review, test point generation, case refinement, knowledge archiving, and mandatory time-saving tracking with team roster. HTML report always generated, presented, and uploaded to Tencent Docs My Documents. Output files use step-number prefixes (1/2/4/6) for clear stage identification. Time-saving stats response now includes local HTML path and Tencent Docs navigation hint (More > My Files > Task Results).",
+    "zh": "【v1.4.4】效贷业务线功能测试专家，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库的端到端流水线。内置花名册盲输入身份验证、强制时间节省追踪（二次确认+腾讯文档智能表格同步+用户故事目录自动管理），查看统计时强制生成、展示并上传 HTML 报告到腾讯文档【我的文档】。各步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤。查看统计回复同步告知本地 HTML 路径与腾讯文档导航路径（更多 > 我的文件 > 任务成果）。"
   },
   "avatar": "avatars/expert.png",
   "categoryId": "10-ProjectQuality",

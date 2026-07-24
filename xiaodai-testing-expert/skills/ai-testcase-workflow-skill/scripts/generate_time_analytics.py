@@ -5,14 +5,17 @@
 读取 records.jsonl，生成 HTML 可视化分析报告。
 
 用法:
-  python generate_time_analytics.py                          # 生成效贷业务线报告
+  python generate_time_analytics.py                          # 生成效贷业务线报告（全量）
   python generate_time_analytics.py --biz-line "效贷"        # 指定业务线
+  python generate_time_analytics.py --person "何甜"           # 生成个人视角报告（该员工所有历史记录）
   python generate_time_analytics.py --output report.html     # 指定输出路径
   python generate_time_analytics.py --format csv             # 输出 CSV 格式
 
 输出:
-  - HTML 报告（默认）：包含总览、按员工/故事/步骤三个维度的统计图表
+  - HTML 报告（默认）：包含总览、按员工/故事/步骤三个维度的统计图表 + JS 筛选面板
   - CSV 报告：原始数据 + 汇总表
+  - 个人报告：预过滤为指定员工的所有历史记录（跨所有故事、所有步骤），标题为"{name} 个人时间节省统计"
+  - 业务线报告：默认全量，显示所有测试人员的节省数据
 """
 
 import argparse
@@ -187,11 +190,20 @@ def compute_stats(records: list) -> dict:
     }
 
 
-def generate_html(records: list, biz_line: str, output_path: str):
-    """生成 HTML 可视化报告"""
+def generate_html(records: list, biz_line: str, output_path: str, person_name: str = ""):
+    """生成 HTML 可视化报告
+
+    Args:
+        records: 时间节省记录列表
+        biz_line: 业务线名称
+        output_path: 输出文件路径
+        person_name: 个人报告模式下的员工姓名，为空则为全业务线报告
+    """
+    report_title = f"{person_name} 个人时间节省统计" if person_name else f"{biz_line}业务线时间节省统计"
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    report_subtitle = f"个人历史累计 · 所有用户故事 · 所有步骤 · 报告时间 {now}" if person_name else f"全业务线汇总 · 所有测试人员 · 报告时间 {now}"
 
     stats = compute_stats(records)
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     # 所有员工、步骤、故事、日期（用于下拉选项）
     all_employees = sorted(set(r.get("employee", "未知") for r in records))
@@ -308,7 +320,7 @@ def generate_html(records: list, biz_line: str, output_path: str):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{biz_line}业务线 - 时间节省分析报告</title>
+<title>{report_title}</title>
 <style>
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f7fa; color: #333; padding: 24px; }}
@@ -367,8 +379,8 @@ def generate_html(records: list, biz_line: str, output_path: str):
 <body>
 
 <div class="header">
-  <h1>{biz_line}业务线 · 测试智能助手时间节省分析</h1>
-  <div class="subtitle">报告生成时间：{now} | 数据来源：records.jsonl</div>
+  <h1>{report_title}</h1>
+  <div class="subtitle">{report_subtitle}</div>
 </div>
 
 <div class="filter-panel">
@@ -847,6 +859,7 @@ def main():
     parser = argparse.ArgumentParser(description="生成时间节省分析报告 v2")
     parser.add_argument("--biz-line", default="效贷", help="业务线（默认：效贷）")
     parser.add_argument("--input", default="", help="外部 JSON 数据文件路径（云端同步数据），优先使用")
+    parser.add_argument("--person", default="", help="个人报告模式：指定员工姓名，仅展示该员工的个人历史累计数据（跨所有用户故事、所有步骤）。不传则为全业务线报告。")
     parser.add_argument("--output", default="", help="输出文件路径（默认自动生成）")
     parser.add_argument("--format", choices=["html", "csv"], default="html", help="输出格式（默认：html）")
 
@@ -854,35 +867,40 @@ def main():
 
     records = load_records(args.biz_line, args.input if args.input else None)
 
+    # 个人报告模式：预过滤为指定员工的所有记录
+    person_name = args.person.strip() if args.person else ""
+    if person_name:
+        records = [r for r in records if r.get("employee", "").strip() == person_name]
+        report_mode = "personal"
+    else:
+        report_mode = "admin"
+
     data_source = args.input if args.input else get_records_path(args.biz_line)
 
+    # 确定输出文件名
+    if not args.output:
+        data_dir = get_data_dir(args.biz_line)
+        if person_name:
+            safe_name = person_name.replace(" ", "_")
+            base = f"time_analytics_{args.biz_line}_{safe_name}"
+        else:
+            base = f"time_analytics_{args.biz_line}"
+        args.output = os.path.join(data_dir, f"{base}.{'csv' if args.format == 'csv' else 'html'}")
+
     if not records:
-        print(f"暂无 {args.biz_line} 业务线的时间节省记录数据。")
+        msg_person = f"员工 {person_name} 的" if person_name else f"{args.biz_line} 业务线的"
+        print(f"暂无{msg_person}时间节省记录数据。")
         print(f"数据来源: {data_source}")
-        # 仍然生成一个空报告
-        if not args.output:
-            data_dir = get_data_dir(args.biz_line)
-            if args.format == "csv":
-                args.output = os.path.join(data_dir, f"time_analytics_{args.biz_line}.csv")
-            else:
-                args.output = os.path.join(data_dir, f"time_analytics_{args.biz_line}.html")
         if args.format == "csv":
             generate_csv(records, args.biz_line, args.output)
         else:
-            generate_html(records, args.biz_line, args.output)
+            generate_html(records, args.biz_line, args.output, person_name)
         return
-
-    if not args.output:
-        data_dir = get_data_dir(args.biz_line)
-        if args.format == "csv":
-            args.output = os.path.join(data_dir, f"time_analytics_{args.biz_line}.csv")
-        else:
-            args.output = os.path.join(data_dir, f"time_analytics_{args.biz_line}.html")
 
     if args.format == "csv":
         generate_csv(records, args.biz_line, args.output)
     else:
-        generate_html(records, args.biz_line, args.output)
+        generate_html(records, args.biz_line, args.output, person_name)
 
     # 打印详细摘要
     total_hours = sum(r.get("total_hours", r.get("time_saved_hours", 0)) for r in records)
@@ -890,8 +908,9 @@ def main():
     unique_emps = set(r.get("employee", "") for r in records)
     unique_stories = set(r.get("user_story", "") for r in records)
 
+    prefix = f"{person_name} 个人" if person_name else f"{args.biz_line}业务线"
     print(f"\n{'='*50}")
-    print(f"📊 {args.biz_line}业务线时间节省统计")
+    print(f"📊 {prefix}时间节省统计")
     print(f"{'='*50}")
     print(f"   数据来源: {data_source}")
     print(f"   记录数: {len(records)} 条")
