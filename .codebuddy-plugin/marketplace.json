@@ -1,11 +1,11 @@
 {
   "name": "xiaodai-test-expert-marketplace",
-  "description": "效贷业务线功能测试专家私有市场，提供测试用例全流程生成（文档整理→需求评审→测试点→用例→入库）与时间节省追踪能力。v1.4.0 新增用户故事目录自动管理、腾讯文档智能表格实时同步修复、花名册强制读取校验。v1.4.1 新增 HTML 报告自动上传腾讯文档【我的文档】。v1.4.3 强化查看统计时强制生成/展示/上传 HTML 报告，并统一步骤产出文件数字前缀（1/2/4/6）。",
+  "description": "效贷业务线功能测试专家私有市场，提供测试用例全流程生成（文档整理→需求评审→测试点→用例→入库）与时间节省追踪能力。v1.4.0 新增用户故事目录自动管理、腾讯文档智能表格实时同步修复、花名册强制读取校验。v1.4.1 新增 HTML 报告自动上传腾讯文档【我的文档】。v1.4.4 强化查看统计时强制生成/展示/上传 HTML 报告，并统一步骤产出文件数字前缀（1/2/4/6）。",
   "plugins": [
     {
       "name": "xiaodai-testing-expert",
       "source": "./plugins/xiaodai-testing-expert",
-      "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0 adds user story directory auto-management, Tencent Docs cloud sync fix, and mandatory roster-based identity verification. v1.4.1 adds auto-upload of HTML analytics report to Tencent Docs My Documents. v1.4.3 strengthens mandatory generate/present/upload for time-saving stats and adds step-number prefixes (1/2/4/6) to output files."
+      "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0 adds user story directory auto-management, Tencent Docs cloud sync fix, and mandatory roster-based identity verification. v1.4.1 adds auto-upload of HTML analytics report to Tencent Docs My Documents. v1.4.4 strengthens mandatory generate/present/upload for time-saving stats and adds step-number prefixes (1/2/4/6) to output files."
     }
   ]
 }
