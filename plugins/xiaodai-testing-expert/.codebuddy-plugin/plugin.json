@@ -1,7 +1,7 @@
 {
   "name": "xiaodai-testing-expert",
   "version": "1.4.2",
-  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0: user story directory auto-management (D:\\效贷-产品需求\\{编号}-{名称}), cloud sync fix (script-generated JSON forwarded to Tencent Docs), updated defaultInitPrompt and quickPrompts. v1.4.1: HTML analytics report auto-uploaded to Tencent Docs My Documents via aipage/smartpage. v1.4.2: strengthened "view time-saving stats" workflow to always generate/present/upload HTML report; added step-number prefixes (1/2/4/6) to output files for clear stage identification.",
+  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0: user story directory auto-management (D:\\效贷-产品需求\\{编号}-{名称}), cloud sync fix (script-generated JSON forwarded to Tencent Docs), updated defaultInitPrompt and quickPrompts. v1.4.1: HTML analytics report auto-uploaded to Tencent Docs My Documents via aipage/smartpage. v1.4.2: strengthened 'view time-saving stats' workflow to always generate/present/upload HTML report; added step-number prefixes (1/2/4/6) to output files for clear stage identification.",
   "author": {
     "name": "Quality Management Team",
     "email": "qa@kingdee.com"
