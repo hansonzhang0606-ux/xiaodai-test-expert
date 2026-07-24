@@ -32,6 +32,6 @@ knowledge_base:
 naming:
   archive_format: "{req_code}_{req_name}_{date}"
   archive_format_no_code: "{req_name}_{date}"
-  testpoint_format: "{name}_测试点.xmind"
-  reviewed_format: "{name}_测试点.xmind（用户直接在此文件上评审）"
-  testcase_format: "{name}_测试用例.xlsx"
+  testpoint_format: "4.{name}_测试点.xmind"
+  reviewed_format: "4.{name}_测试点.xmind（用户直接在此文件上评审）"
+  testcase_format: "6.{name}_测试用例.xlsx"

@@ -453,7 +453,12 @@ def main():
         output_path = args.output
     else:
         input_dir = os.path.dirname(args.input)
-        base_name = os.path.basename(args.input).replace('_parsed.json', '')
+        base_name = os.path.splitext(os.path.basename(args.input))[0]
+        # 兼容步骤前缀命名：输入如 6.xxx_测试点_reviewed.json → 输出 6.xxx_测试用例.json
+        for suffix in ['_测试点_reviewed', '_测试点', '_reviewed']:
+            if base_name.endswith(suffix):
+                base_name = base_name[:-len(suffix)]
+                break
         output_path = os.path.join(input_dir, f"{base_name}_测试用例.json")
 
     with open(output_path, 'w', encoding='utf-8') as f:

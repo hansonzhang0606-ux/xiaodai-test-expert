@@ -305,9 +305,9 @@ def main():
     else:
         input_dir = os.path.dirname(args.input)
         input_name = os.path.splitext(os.path.basename(args.input))[0]
-        # 去掉 _测试用例 后缀
+        # 去掉 _测试用例 后缀，避免重复
         if input_name.endswith('_测试用例'):
-            input_name = input_name[:-5]
+            input_name = input_name[:-len('_测试用例')]
         output_path = os.path.join(input_dir, f'{input_name}_测试用例.xlsx')
 
     # 生成 Excel

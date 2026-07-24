@@ -348,9 +348,9 @@ knowledge_base:
 
 naming:
   archive_format: "{name}_{date}"
-  testpoint_format: "{name}_测试点_v{version}-ai"
-  reviewed_format: "{name}_测试点_v{version}-reviewed"
-  testcase_format: "{name}_测试用例"
+  testpoint_format: "4.{name}_测试点_v{version}-ai"
+  reviewed_format: "6.{name}_测试点_v{version}-reviewed"
+  testcase_format: "6.{name}_测试用例"
 """
         return template
 

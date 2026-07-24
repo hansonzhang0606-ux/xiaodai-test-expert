@@ -103,11 +103,11 @@ naming:
   # 无需求编号时的命名格式
   archive_format_no_code: "{req_name}_{date}"
   
-  # 测试点文件命名
-  testpoint_format: "{name}_测试点.xmind"
+  # 测试点文件命名（步骤④产出，前缀 "4."）
+  testpoint_format: "4.{name}_测试点.xmind"
 
-  # 评审后文件命名（用户直接在原文件上评审，无需重命名）
-  reviewed_format: "{name}_测试点.xmind（用户直接在此文件上评审）"
+  # 评审后文件命名（用户直接在原文件上评审，无需重命名；来源为步骤④的 4.{name}_测试点.xmind）
+  reviewed_format: "4.{name}_测试点.xmind（用户直接在此文件上评审）"
   
-  # 测试用例文件命名
-  testcase_format: "{name}_测试用例.xlsx"
+  # 测试用例文件命名（步骤⑥产出，前缀 "6."）
+  testcase_format: "6.{name}_测试用例.xlsx"

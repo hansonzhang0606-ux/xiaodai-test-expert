@@ -86,11 +86,11 @@
 
 | 输出项 | 格式 | 命名 | 输出路径 | 说明 |
 |--------|------|------|---------|------|
-| 测试用例 Excel | .xlsx | `{需求名}_测试用例.xlsx` | `{user_story_dir}/` | ⭐ 必选 |
-| 测试用例 JSON | .json | `{需求名}_测试用例.json` | `{user_story_dir}/` | ⭐ 必选 |
-| 评审后快照 JSON | .json | `{需求名}_测试点_reviewed.json` | `{user_story_dir}/` | 模式A（完整流程）时生成，用于步骤⑦差异对比 |
+| 测试用例 Excel | .xlsx | `6.{需求名}_测试用例.xlsx` | `{user_story_dir}/` | ⭐ 必选 | 步骤⑥产出，文件名前缀 "6." |
+| 测试用例 JSON | .json | `6.{需求名}_测试用例.json` | `{user_story_dir}/` | ⭐ 必选 | 步骤⑥产出，文件名前缀 "6." |
+| 评审后快照 JSON | .json | `6.{需求名}_测试点_reviewed.json` | `{user_story_dir}/` | 模式A（完整流程）时生成，文件名前缀 "6." |
 
-> 💡 **模式A（完整流程）**：需要生成 `*_测试点_reviewed.json`，步骤⑦入库时对比 `*_测试点.json`（AI 原始）vs `*_测试点_reviewed.json`（评审后），计算 AI 遗漏率/通过率
+> 💡 **模式A（完整流程）**：需要生成 `6.*_测试点_reviewed.json`，步骤⑦入库时对比 `4.*_测试点.json`（AI 原始）vs `6.*_测试点_reviewed.json`（评审后），计算 AI 遗漏率/通过率
 > 💡 **模式B（单步模式）**：无需差异对比，只生成用例 JSON + Excel 即可
 
 ---
@@ -101,7 +101,7 @@
 {
   "metadata": {
     "title": "{需求名称}_测试用例",
-    "source_xmind": "{需求名称}_测试点.xmind",
+    "source_xmind": "4.{需求名称}_测试点.xmind",
     "generated_date": "2026-05-06",
     "generated_by": "AI智能细化",
     "statistics": {
@@ -154,7 +154,7 @@
 | 字段路径 | 含义 | 必填 | 说明 |
 |---------|------|------|------|
 | `metadata.title` | 测试用例名称 | ✅ | 格式：`{需求名称}_测试用例` |
-| `metadata.source_xmind` | 来源 XMind 文件名 | ✅ | 格式：`{需求名称}_测试点.xmind` |
+| `metadata.source_xmind` | 来源 XMind 文件名 | ✅ | 格式：`4.{需求名称}_测试点.xmind`（步骤④生成的 XMind，前缀 "4."） |
 | `metadata.generated_date` | 生成日期 | ✅ | YYYY-MM-DD 格式 |
 | `metadata.statistics` | 用例统计 | ✅ | 总数 + 分类统计 |
 | `metadata.user_config` | 用户参数 | ✅ | 用户问答收集的参数 |
@@ -209,7 +209,7 @@ python scripts/<脚本名>.py -h
 ```
 1. 搜索 XMind 文件（{需求名}_测试点.xmind，用户已在此文件上添加评审标记）
 2. 调用脚本解析 XMind 并转化为 JSON：
-   python scripts/parse_xmind.py "{需求名}_测试点.xmind" -o "{需求名}_测试点_reviewed.json"
+   python scripts/parse_xmind.py "4.{需求名}_测试点.xmind" -o "6.{需求名}_测试点_reviewed.json"
    ⚠️ 注意：input 是位置参数，不需要 --input 标志！
 3. 脚本解析内容：
    - 提取测试点层级结构（modules → sub_modules → testpoints）
@@ -235,7 +235,7 @@ python scripts/<脚本名>.py -h
 > ⚠️ 删除标记的测试点不生成测试用例！
 ```
 
-**输出文件**：`{需求名}_测试点_reviewed.json`
+**输出文件**：`6.{需求名}_测试点_reviewed.json`
 
 ---
 
@@ -470,18 +470,20 @@ AI 执行时使用以下配置：
 **AI 按步骤调用各脚本：**
 
 ```bash
-# 步骤1：解析评审后 XMind
-python scripts/parse_xmind.py "<评审后XMind文件>" -o "<需求名>_测试点_reviewed.json"
+# 步骤1：解析评审后 XMind（输入为步骤④生成的 4.<需求名>_测试点.xmind）
+python scripts/parse_xmind.py "4.<需求名>_测试点.xmind" -o "6.<需求名>_测试点_reviewed.json"
 
-# 步骤2：细化测试点为用例
-python scripts/refine_testcases.py "<测试点JSON>" \
+# 步骤2：细化测试点为用例（输出 6.<需求名>_测试用例.json）
+python scripts/refine_testcases.py "6.<需求名>_测试点_reviewed.json" \
+    -o "6.<需求名>_测试用例.json" \
     --caseGroup "<功能路径>" \
     --version "<版本号>" \
     --manager "<责任人>" \
     --relateReqCode "<需求编码>"
 
-# 步骤3：生成 Excel
-python scripts/generate_excel.py "<测试用例JSON>" \
+# 步骤3：生成 Excel（输出 6.<需求名>_测试用例.xlsx）
+python scripts/generate_excel.py "6.<需求名>_测试用例.json" \
+    -o "6.<需求名>_测试用例.xlsx" \
     --caseGroup "<功能路径>" \
     --version "<版本号>" \
     --manager "<责任人>" \
@@ -594,3 +596,9 @@ python scripts/generate_excel.py "<测试用例JSON>" \
 用例类型：功能测试
 用例级别：P1
 ```
+
+---
+
+*版本：v1.1*
+*更新日期：2026-07-24*
+*更新：步骤⑥产出文件统一添加 "6." 前缀；来源 XMind 统一使用步骤④的 "4." 前缀，便于在工作目录中直观识别文件归属步骤*
