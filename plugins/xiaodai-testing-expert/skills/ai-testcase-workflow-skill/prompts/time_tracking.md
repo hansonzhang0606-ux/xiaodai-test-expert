@@ -1,10 +1,11 @@
-# 时间节省追踪规则（v4 — 强制反馈 + 二次确认 + 参考时间 + 腾讯文档实时同步）
+# 时间节省追踪规则（v4.1 — 强制反馈 + 二次确认 + 参考时间 + 腾讯文档实时同步 + HTML 报告自动上传）
 
 > **本文件定义了工作流每个步骤完成后，强制收集时间节省数据的执行规则。**
 > 触发条件：会话启动时选择身份；步骤 ①②④⑥⑦ 完成后强制反馈；
 > 用户说"查看时间统计"时生成分析报告。
 >
 > **v4 变更**：cloud 模式下，用户确认后**立即**调用腾讯文档 MCP `mcp__tencent-docs__smartsheet.add_records` 追加一行到智能表格，实现实时同步（非定时批量）。
+> **v4.1 变更**：查看统计生成的 HTML 报告自动打包为 `.aipage` 并导入腾讯文档【我的文档】，方便测试人员随时在线打开。
 
 ---
 
@@ -266,10 +267,79 @@ python scripts/record_time_saved.py \
 
 4. **写入临时 JSON 文件**：将转换后的记录列表写入 `~/.workbuddy/data/time-tracking/效贷/_cloud_sync.json`
 
-5. **生成报告**：
+5. **生成本地 HTML 报告**：
    ```bash
    python scripts/generate_time_analytics.py --biz-line "效贷" --input ~/.workbuddy/data/time-tracking/效贷/_cloud_sync.json
    ```
+
+6. **【cloud 模式】将 HTML 报告上传到腾讯文档【我的文档】**（v4.1 新增，强制）：
+
+   > **目的**：让测试人员随时可以在 WorkBuddy【更多】-【腾讯文件】-【我的文档】中打开 HTML 格式的报告，内容与管理员看到的报告完全一致。
+   >
+   > 上传失败**不阻塞**本地报告展示，但必须尝试并告知用户结果。
+
+   执行步骤：
+
+   1. **读取上传配置**：从 `config/time_tracking_config.yaml` 读取：
+      - `tencent_docs.skill_dir`：tencent-docs skill 目录（默认 `~/.workbuddy/skills/skill_2053084036212973568`）
+      - `tencent_docs.report_title`：报告标题（默认 "效贷时间节省统计报告"）
+      - `tencent_docs.report_file_id`：已上传报告的 file_id（可能为空）
+      - `tencent_docs.report_url`：已上传报告的 URL（可能为空）
+
+   2. **定位打包脚本**：
+      - 主路径：`{skill_dir}/aipage_pack.js`
+      - 如果主路径不存在，在 `~/.workbuddy/skills/**/aipage_pack.js` 中搜索
+
+   3. **打包 HTML 为 `.aipage`**：
+      ```bash
+      node {skill_dir}/aipage_pack.js --html {report_path} --title "{report_title}"
+      ```
+      从输出中解析：
+      - `AIPAGE_PATH` → 打包后的 .aipage 文件路径
+      - `AIPAGE_SIZE` → 文件大小（字节）
+      - `AIPAGE_MD5` → 文件 MD5
+      - `AIPAGE_TITLE` → 文件标题
+
+   4. **获取 COS 上传链接**：调用 MCP 工具 `mcp__tencent-docs__manage.pre_import`：
+      ```json
+      {
+        "file_name": "{basename(AIPAGE_PATH)}",
+        "file_size": {AIPAGE_SIZE},
+        "file_md5": "{AIPAGE_MD5}"
+      }
+      ```
+      从返回中解析 `upload_url`、`file_key`、`task_id`。
+
+   5. **PUT 上传到 COS**：
+      ```bash
+      curl -sS -X PUT -H "Content-Type: application/octet-stream" --data-binary "@{AIPAGE_PATH}" "{upload_url}"
+      ```
+      HTTP 2xx 表示上传成功。
+
+   6. **触发异步导入**：调用 MCP 工具 `mcp__tencent-docs__manage.async_import`：
+      ```json
+      {
+        "task_id": "{task_id}",
+        "file_key": "{file_key}",
+        "file_name": "{basename(AIPAGE_PATH)}",
+        "file_md5": "{AIPAGE_MD5}",
+        "file_size": {AIPAGE_SIZE}
+      }
+      ```
+
+   7. **轮询导入进度**：每 3 秒调用一次 `mcp__tencent-docs__manage.import_progress`，最多 60 秒：
+      ```json
+      {"task_id": "{task_id}"}
+      ```
+      直到返回 `progress=100` 或出现 `error`。成功时从返回中读取 `file_id` 和 `file_url`。
+
+   8. **清理旧报告（可选但推荐）**：如果配置中已有 `report_file_id`，调用 `mcp__tencent-docs__manage.delete_file` 删除旧文件，避免【我的文档】中出现多个同名报告。
+
+   9. **回填配置**：将新的 `file_id` 和 `file_url` 写回 `config/time_tracking_config.yaml` 的 `tencent_docs.report_file_id` 和 `tencent_docs.report_url`。
+
+   10. **异常处理**：
+       - 任一步骤失败，在最终回复中标注 `⚠️ 报告已生成本地文件，但上传到腾讯文档失败：{错误信息}`
+       - 上传失败**不影响**本地报告的 `present_files` 展示
 
 **storage_mode=excel 时**：
 1. 读取 `config/time_tracking_config.yaml` 获取 `excel.file_path`
@@ -278,10 +348,19 @@ python scripts/record_time_saved.py \
 **storage_mode=local 时**：
 1. 直接调用：`python scripts/generate_time_analytics.py --biz-line "效贷"`
 
-### 输出与展示
+### 输出与展示（强制规则，不可跳过）
 
-1. 告知用户报告已生成及路径
-2. 在对话中简要播报关键数字（**以人天为主展示**）：
+> **⚠️ 硬性要求**：每次查看时间统计时，**必须同时完成以下四项**，缺一不可：
+> 1. 生成 HTML 报告文件
+> 2. 调用 `present_files` 工具展示报告（自动在右侧面板打开预览）
+> 3. 在对话回复中附上报告文件的本地完整路径，供用户直接访问
+> 4. **【cloud 模式】将 HTML 报告上传到腾讯文档【我的文档】，并在回复中附上在线访问链接**
+>
+> 禁止只播报数字而不生成/展示报告，也禁止生成报告但不调用 `present_files` 或不上传腾讯文档。
+
+1. 告知用户报告已生成，**并在回复中给出完整的本地文件路径**（如 `C:\Users\kingdee\.workbuddy\data\time-tracking\效贷\time_analytics_效贷.html`）
+2. **【cloud 模式】** 告知用户报告已同步到腾讯文档【我的文档】，**并给出腾讯文档在线访问链接**（如 `https://docs.qq.com/smartpage/xxxx`）。链接从上传结果 `file_url` 获取，并回填到 `config/time_tracking_config.yaml` 的 `tencent_docs.report_url`。
+3. 在对话中简要播报关键数字（**以人天为主展示**）：
 
 ```
 📊 效贷业务线时间节省统计：
@@ -303,7 +382,8 @@ python scripts/record_time_saved.py \
    - 入库知识库：{e_pd} 人天（{e_hours} 小时）
 ```
 
-3. 使用 present_files 工具将 HTML 报告展示给用户
+3. **【强制】** 调用 `present_files` 工具将 HTML 报告展示给用户（自动在右侧面板打开预览），**不可跳过**
+4. **【强制】** 在对话回复中附上报告文件的本地完整路径，方便用户直接访问
 
 ### CSV 导出
 
@@ -369,6 +449,10 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 └── _cloud_sync.json               # 云端同步数据临时文件
 ```
 
+### 腾讯文档在线报告（storage_mode=cloud 时）
+
+每次生成 `time_analytics_效贷.html` 后，AI 会将其打包为 `.aipage` 并导入腾讯文档作为 `smartpage`，存放到当前账号的【我的文档】。file_id 和 url 记录在 `config/time_tracking_config.yaml` 的 `tencent_docs.report_file_id` / `report_url` 中，后续生成会覆盖同一文件（先删除旧文件再上传新文件）。
+
 ### Excel 存储（storage_mode=excel 时）
 
 管理员指定的 Excel 文件，包含表头和数据行。所有员工共享（通过共享目录或定期收集合并）。
@@ -415,3 +499,4 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 8. **统一存储单位**：底层存储统一为小时（1人天=8小时），报告展示以人天为主。
 9. **双写策略**：excel/cloud 模式下同时写本地 JSONL 和集中存储，本地为兜底。
 10. **报告公开**：任何员工都可查看全团队统计数据，无权限分级。
+11. **【强制】报告必展示且必上传（cloud 模式）**：每次查看时间统计时，必须同时完成四件事——① 生成 HTML 报告；② 调用 `present_files` 工具在右侧面板打开预览；③ 在对话回复中附上报告本地完整路径；④ 将报告上传到腾讯文档【我的文档】并附上在线链接。缺一不可，禁止只播报数字而不展示/上传报告。

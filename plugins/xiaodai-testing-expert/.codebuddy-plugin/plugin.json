@@ -1,7 +1,7 @@
 {
   "name": "xiaodai-testing-expert",
-  "version": "1.4.0",
-  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0: user story directory auto-management (D:\\效贷-产品需求\\{编号}-{名称}), cloud sync fix (script-generated JSON forwarded to Tencent Docs), updated defaultInitPrompt and quickPrompts.",
+  "version": "1.4.1",
+  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0: user story directory auto-management (D:\\效贷-产品需求\\{编号}-{名称}), cloud sync fix (script-generated JSON forwarded to Tencent Docs), updated defaultInitPrompt and quickPrompts. v1.4.1: HTML analytics report auto-uploaded to Tencent Docs My Documents via aipage/smartpage.",
   "author": {
     "name": "Quality Management Team",
     "email": "qa@kingdee.com"
@@ -23,8 +23,8 @@
     "zh": "效贷功能测试专家"
   },
   "displayDescription": {
-    "en": "[v1.4.0] Xiaodai testing expert with end-to-end pipeline: requirement consolidation (local directory or Confluence page), review, test point generation, case refinement, knowledge archiving, and mandatory time-saving tracking with team roster.",
-    "zh": "【v1.4.0】效贷业务线功能测试专家，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库的端到端流水线。内置花名册盲输入身份验证、强制时间节省追踪（二次确认+腾讯文档智能表格同步+用户故事目录自动管理）。"
+    "en": "[v1.4.1] Xiaodai testing expert with end-to-end pipeline: requirement consolidation (local directory or Confluence page), review, test point generation, case refinement, knowledge archiving, and mandatory time-saving tracking with team roster. HTML report auto-uploaded to Tencent Docs My Documents.",
+    "zh": "【v1.4.1】效贷业务线功能测试专家，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库的端到端流水线。内置花名册盲输入身份验证、强制时间节省追踪（二次确认+腾讯文档智能表格同步+用户故事目录自动管理），报告自动生成并上传腾讯文档【我的文档】。"
   },
   "avatar": "avatars/expert.png",
   "categoryId": "10-ProjectQuality",
