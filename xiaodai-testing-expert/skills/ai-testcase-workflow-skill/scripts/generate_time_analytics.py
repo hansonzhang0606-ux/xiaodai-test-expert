@@ -14,7 +14,7 @@
 输出:
   - HTML 报告（默认）：包含总览、按员工/故事/步骤三个维度的统计图表 + JS 筛选面板
   - CSV 报告：原始数据 + 汇总表
-  - 个人报告：预过滤为指定员工的所有历史记录（跨所有故事、所有步骤），标题为"{name} 个人时间节省统计"
+  - 个人报告：预过滤为指定员工的所有历史记录（跨所有故事、所有步骤），标题统一为"效贷测试专家时间节省报告"
   - 业务线报告：默认全量，显示所有测试人员的节省数据
 """
 
@@ -32,8 +32,13 @@ STEP_NAMES = {
     "01": "文档整理",
     "02": "需求评审",
     "04": "生成测试点",
-    "06": "生成用例",
-    "07": "入库知识库",
+    "06": "用例细化",
+    "07": "知识入库",
+}
+# 兼容旧数据中使用的步骤名称别名
+STEP_NAME_ALIASES = {
+    "生成用例": "用例细化",
+    "入库知识库": "知识入库",
 }
 
 
@@ -199,7 +204,7 @@ def generate_html(records: list, biz_line: str, output_path: str, person_name: s
         output_path: 输出文件路径
         person_name: 个人报告模式下的员工姓名，为空则为全业务线报告
     """
-    report_title = f"{person_name} 个人时间节省统计" if person_name else f"{biz_line}业务线时间节省统计"
+    report_title = "效贷测试专家时间节省报告"
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     report_subtitle = f"个人历史累计 · 所有用户故事 · 所有步骤 · 报告时间 {now}" if person_name else f"全业务线汇总 · 所有测试人员 · 报告时间 {now}"
 
@@ -211,13 +216,15 @@ def generate_html(records: list, biz_line: str, output_path: str, person_name: s
     all_stories = sorted(set(r.get("user_story", "未知") for r in records))
     all_dates = sorted(set(r.get("date", "") for r in records if r.get("date")))
 
-    # 步骤排序
+    # 步骤排序：按 STEP_ORDER 顺序，同时兼容旧名称别名
     def step_sort_key(s):
+        canonical = STEP_NAME_ALIASES.get(s, s)
         for code, name in STEP_NAMES.items():
-            if name == s:
+            if name == canonical:
                 return STEP_ORDER.index(code)
         return 99
 
+    all_steps = sorted(all_steps, key=step_sort_key)
     steps_sorted = sorted(stats["by_step"].keys(), key=step_sort_key)
     employees_sorted = sorted(stats["by_employee"].keys())
 
@@ -551,6 +558,7 @@ const ALL_RECORDS = {records_json};
 const HOURS_PER_PD = {HOURS_PER_PD};
 const STEP_ORDER = {json.dumps(STEP_ORDER)};
 const STEP_NAMES = {json.dumps(STEP_NAMES, ensure_ascii=False)};
+const STEP_NAME_ALIASES = {json.dumps(STEP_NAME_ALIASES, ensure_ascii=False)};
 
 // 为每条记录解析日期维度
 function parseRecordDate(r) {{
@@ -571,8 +579,9 @@ function parseRecordDate(r) {{
 ALL_RECORDS.forEach(parseRecordDate);
 
 function stepSortKey(s) {{
+  const canonical = STEP_NAME_ALIASES[s] || s;
   for (const [code, name] of Object.entries(STEP_NAMES)) {{
-    if (name === s) return STEP_ORDER.indexOf(code);
+    if (name === canonical) return STEP_ORDER.indexOf(code);
   }}
   return 99;
 }}
@@ -908,9 +917,9 @@ def main():
     unique_emps = set(r.get("employee", "") for r in records)
     unique_stories = set(r.get("user_story", "") for r in records)
 
-    prefix = f"{person_name} 个人" if person_name else f"{args.biz_line}业务线"
     print(f"\n{'='*50}")
-    print(f"📊 {prefix}时间节省统计")
+    print(f"📊 效贷测试专家时间节省报告")
+    print(f"   ({person_name} 个人视角)" if person_name else "   (业务线视角)")
     print(f"{'='*50}")
     print(f"   数据来源: {data_source}")
     print(f"   记录数: {len(records)} 条")
@@ -926,14 +935,20 @@ def main():
     for emp in sorted(by_emp.keys(), key=lambda e: by_emp[e], reverse=True):
         print(f"     {emp}: {by_emp[emp]/HOURS_PER_PD:.1f} 人天（{by_emp[emp]:.1f} 小时）")
 
-    # 按步骤摘要
+    # 按步骤摘要（按固定顺序输出，兼容旧名称）
+    def _step_sort_key(s):
+        canonical = STEP_NAME_ALIASES.get(s, s)
+        for code, name in STEP_NAMES.items():
+            if name == canonical:
+                return STEP_ORDER.index(code)
+        return 99
+
     by_step_summary = defaultdict(float)
     for r in records:
         by_step_summary[r.get("step", "")] += r.get("total_hours", r.get("time_saved_hours", 0))
     print(f"\n   按步骤分布:")
-    for step in STEP_NAMES.values():
-        if step in by_step_summary:
-            print(f"     {step}: {by_step_summary[step]/HOURS_PER_PD:.1f} 人天（{by_step_summary[step]:.1f} 小时）")
+    for step in sorted(by_step_summary.keys(), key=_step_sort_key):
+        print(f"     {step}: {by_step_summary[step]/HOURS_PER_PD:.1f} 人天（{by_step_summary[step]:.1f} 小时）")
     print(f"{'='*50}")
 
 

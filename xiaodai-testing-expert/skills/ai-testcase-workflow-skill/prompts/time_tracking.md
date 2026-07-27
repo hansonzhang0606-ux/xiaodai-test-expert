@@ -249,8 +249,8 @@ python scripts/record_time_saved.py \
 
 | 查看者角色 | 报告范围 | 脚本参数 | 报告标题 | 文件名 |
 |-----------|---------|---------|---------|--------|
-| **测试人员**（普通员工） | 该员工个人历史累计：所有用户故事、所有步骤 | `--person "{姓名}"` | `{姓名} 个人时间节省统计` | `time_analytics_效贷_{姓名}.html` |
-| **管理员**（role: admin） | 当前业务线所有测试人员汇总 | 不传 `--person` | `效贷业务线时间节省统计` | `time_analytics_效贷.html` |
+| **测试人员**（普通员工） | 该员工个人历史累计：所有用户故事、所有步骤 | `--person "{姓名}"` | `效贷测试专家时间节省报告` | `time_analytics_效贷_{姓名}.html` |
+| **管理员**（role: admin） | 当前业务线所有测试人员汇总 | 不传 `--person` | `效贷测试专家时间节省报告` | `time_analytics_效贷.html` |
 
 > 测试人员报告：涵盖该员工自使用专家以来，在**所有**需求故事中执行**所有**步骤的累计节省数据，不是只展示当前故事的数据。管理员报告：涵盖业务线下**所有**测试人员的节省数据。
 
@@ -302,7 +302,7 @@ python scripts/record_time_saved.py \
 
    1. **读取上传配置**：从 `config/time_tracking_config.yaml` 读取：
       - `tencent_docs.skill_dir`：tencent-docs skill 目录（默认 `~/.workbuddy/skills/skill_2053084036212973568`）
-      - `tencent_docs.report_title`：报告标题（默认 "效贷时间节省统计报告"）
+      - `tencent_docs.report_title`：报告标题（默认 "效贷测试专家节省时间报告"），上传后在腾讯文档列表中显示为该名称
       - `tencent_docs.report_file_id`：已上传报告的 file_id（可能为空）
       - `tencent_docs.report_url`：已上传报告的 URL（可能为空）
 
@@ -323,11 +323,12 @@ python scripts/record_time_saved.py \
    4. **获取 COS 上传链接**：调用 MCP 工具 `mcp__tencent-docs__manage.pre_import`：
       ```json
       {
-        "file_name": "{basename(AIPAGE_PATH)}",
+        "file_name": "{report_title}",
         "file_size": {AIPAGE_SIZE},
         "file_md5": "{AIPAGE_MD5}"
       }
       ```
+      > 使用 `report_title` 作为腾讯文档中的文件名称，确保上传后列表显示为固定名称。
       从返回中解析 `upload_url`、`file_key`、`task_id`。
 
    5. **PUT 上传到 COS**：
@@ -341,7 +342,7 @@ python scripts/record_time_saved.py \
       {
         "task_id": "{task_id}",
         "file_key": "{file_key}",
-        "file_name": "{basename(AIPAGE_PATH)}",
+        "file_name": "{report_title}",
         "file_md5": "{AIPAGE_MD5}",
         "file_size": {AIPAGE_SIZE}
       }
@@ -397,7 +398,7 @@ python scripts/record_time_saved.py \
 
 **测试人员（个人报告）**：
 ```
-📊 {姓名} 个人时间节省统计：
+📊 效贷测试专家时间节省报告（{姓名} 个人视角）
    累计节省：{Y} 人天（{X} 小时）
    覆盖故事：{M} 个
    记录总数：{K} 条
@@ -406,13 +407,13 @@ python scripts/record_time_saved.py \
    - 文档整理：{a_pd} 人天
    - 需求评审：{b_pd} 人天
    - 生成测试点：{c_pd} 人天
-   - 生成用例：{d_pd} 人天
-   - 入库知识库：{e_pd} 人天
+   - 用例细化：{d_pd} 人天
+   - 知识入库：{e_pd} 人天
 ```
 
 **管理员（业务线报告）**：
 ```
-📊 效贷业务线时间节省统计：
+📊 效贷测试专家时间节省报告（业务线视角）
    累计节省：{Y} 人天（{X} 小时）
    参与员工：{N} 人
    覆盖故事：{M} 个
@@ -427,8 +428,8 @@ python scripts/record_time_saved.py \
    - 文档整理：{a_pd} 人天（{a_hours} 小时）
    - 需求评审：{b_pd} 人天（{b_hours} 小时）
    - 生成测试点：{c_pd} 人天（{c_hours} 小时）
-   - 生成用例：{d_pd} 人天（{d_hours} 小时）
-   - 入库知识库：{e_pd} 人天（{e_hours} 小时）
+   - 用例细化：{d_pd} 人天（{d_hours} 小时）
+   - 知识入库：{e_pd} 人天（{e_hours} 小时）
 ```
 
 **回复前自检清单（必须逐项确认）**：

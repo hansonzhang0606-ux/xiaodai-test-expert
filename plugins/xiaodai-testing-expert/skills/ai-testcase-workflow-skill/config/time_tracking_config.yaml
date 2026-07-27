@@ -58,7 +58,7 @@ tencent_docs:
   # 首次上传后，report_file_id 和 report_url 会自动回填，后续生成会覆盖更新同一文件。
   report_file_id: ""                    # 已上传报告的腾讯文档 file_id（首次上传后自动回填）
   report_url: ""                        # 已上传报告的在线访问链接（首次上传后自动回填）
-  report_title: "效贷时间节省统计报告"    # 上传后在腾讯文档中显示的文件标题
+  report_title: "效贷测试专家节省时间报告"    # 上传后在腾讯文档中显示的文件标题（建议使用固定名称，便于同一文件覆盖更新）
   # Tencent Docs skill 目录，用于定位 aipage_pack.js 打包脚本
   skill_dir: "~/.workbuddy/skills/skill_2053084036212973568"
 
@@ -125,14 +125,14 @@ reference_times:
     basis: "按需求复杂度浮动，涉及多系统交互取上限"
 
   - step_code: "06"
-    step_name: "生成用例"
+    step_name: "用例细化"
     min_hours: 4.0
     max_hours: 8.0
     unit: "小时"
     basis: "按用例数量浮动，100条以上取上限，可用人天"
 
   - step_code: "07"
-    step_name: "入库知识库"
+    step_name: "知识入库"
     min_hours: 1.0
     max_hours: 2.0
     unit: "小时"
