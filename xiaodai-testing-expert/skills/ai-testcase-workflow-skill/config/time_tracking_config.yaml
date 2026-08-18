@@ -6,8 +6,8 @@
 # ============================================================
 # local:  仅本地 JSONL（默认，无集中存储）
 # excel:  本地 JSONL + Excel 文件（管理员分发或共享目录）
-# cloud:  腾讯文档智能表格为主 + 本地 JSONL 兜底
-storage_mode: "cloud"
+# mysql:  本地 JSONL + 定时任务幂等同步到共享 MySQL（v1.5.0 起生效）
+storage_mode: "mysql"
 
 # ============================================================
 # 本地存储路径（relative to ~/.workbuddy/data/）
@@ -31,11 +31,23 @@ excel:
   sheet_name: "效贷时间追踪表"
 
 # ============================================================
-# 腾讯文档智能表格配置（storage_mode=cloud 时生效）
+# MySQL 共享数据库配置（storage_mode=mysql 时生效，v1.5.0 起）
 # ============================================================
-# 首次使用时 Agent 通过 tencent-docs skill 创建智能表格，
-# 创建后将 doc_id 填入下方，后续所有员工共享此表格。
-# 需要企业账号腾讯文档管理员授权开通。
+# 本机连接凭证保存在 ~/.workbuddy/data/time-tracking/效贷/mysql_config.json
+# （含数据库密码，不随专家包分发，由管理员告知后运行 init_mysql_config.py 生成）
+# 同步链路：record_time_saved.py 写本地 JSONL → 定时任务（每日 12:00/18:00）
+# 调用 sync_to_mysql.py 幂等 upsert → MySQL 表 agent_time_tracking
+mysql:
+  config_file: "~/.workbuddy/data/time-tracking/效贷/mysql_config.json"
+  table: "agent_time_tracking"
+  record_key: "MD5(biz_line_code|employee|user_story|step_code|timestamp秒)"
+
+# ============================================================
+# 腾讯文档智能表格配置（已废弃，v1.5.0 起改用 MySQL，仅保留供参考）
+# ============================================================
+# ⚠️ storage_mode=mysql 后，以下腾讯文档配置不再使用。
+# 数据不再实时同步到腾讯文档，HTML 报告也不再上传【我的文档】。
+# 如需回退 cloud 模式，将 storage_mode 改回 "cloud" 并恢复以下配置。
 tencent_docs:
   doc_id: "NJsgqBKwrNux"              # 智能表格文档ID
   doc_url: "https://docs.qq.com/smartsheet/DTkpzZ3FCS3dyTnV4"

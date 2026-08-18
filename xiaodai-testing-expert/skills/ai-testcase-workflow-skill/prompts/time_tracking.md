@@ -1,12 +1,13 @@
-# 时间节省追踪规则（v4.1 — 强制反馈 + 二次确认 + 参考时间 + 腾讯文档实时同步 + HTML 报告自动上传）
+# 时间节省追踪规则（v5 — 强制反馈 + 二次确认 + 参考时间 + MySQL 定时同步）
 
 > **本文件定义了工作流每个步骤完成后，强制收集时间节省数据的执行规则。**
 > 触发条件：会话启动时选择身份；步骤 ①②④⑥⑦ 完成后强制反馈；
 > 用户说"查看时间统计"时生成分析报告。
 >
-> **v4 变更**：cloud 模式下，用户确认后**立即**调用腾讯文档 MCP `mcp__tencent-docs__smartsheet.add_records` 追加一行到智能表格，实现实时同步（非定时批量）。
-> **v4.1 变更**：查看统计生成的 HTML 报告自动打包为 `.aipage` 并导入腾讯文档【我的文档】，方便测试人员随时在线打开。
-> **v4.2 变更**：查看统计时，根据身份自动区分报告范围 — 测试人员生成**个人视角报告**（`--person "{姓名}"`，历史累计所有故事/所有步骤），管理员生成**业务线全量报告**。回复中同步告知本地 HTML 文件路径，以及腾讯文档中【更多】-【我的文件】-【任务成果】的具体导航位置。HTML 报告内置 JS 筛选面板，支持按员工/步骤/日期维度（月/季度/年）/用户故事名称灵活查询。
+> **v5 变更**：存储方式由腾讯文档智能表格改为共享 MySQL（v1.5.0 起）。用户确认后数据**立即写入本地 JSONL**（零网络依赖、兜底），由**定时任务（每日 12:00/18:00）幂等 upsert** 同步到共享 MySQL 表 `agent_time_tracking`，AI 无需实时调用云 API。查看统计时**从 MySQL 读取全量数据**生成 HTML 报告，报告**仅本地展示**（不再上传腾讯文档【我的文档】）。
+> **v4 变更**：cloud 模式下，用户确认后**立即**调用腾讯文档 MCP `mcp__tencent-docs__smartsheet.add_records` 追加一行到智能表格，实现实时同步（非定时批量）。**（v5 起已废弃）**
+> **v4.1 变更**：查看统计生成的 HTML 报告自动打包为 `.aipage` 并导入腾讯文档【我的文档】，方便测试人员随时在线打开。**（v5 起已废弃）**
+> **v4.2 变更**：查看统计时，根据身份自动区分报告范围 — 测试人员生成**个人视角报告**（`--person "{姓名}"`，历史累计所有故事/所有步骤），管理员生成**业务线全量报告**。HTML 报告内置 JS 筛选面板，支持按员工/步骤/日期维度（月/季度/年）/用户故事名称灵活查询。
 
 ---
 
@@ -149,11 +150,11 @@
 - 用户回复"取消" / "不要了" → 不保存，标注"用户取消记录"，继续推进工作流
 - **不确认不保存**：用户未明确确认前，禁止调用记录脚本
 
-### 第 4 步：写入数据（JSONL 兜底 + 云端实时同步）
+### 第 4 步：写入数据（JSONL 兜底 + MySQL 定时同步）
 
-用户确认后，**立即执行以下三步**（都不可跳过）：
+用户确认后，**立即执行以下两步**（都不可跳过）：
 
-#### 4a. 写入本地 JSONL（兜底）
+#### 4a. 写入本地 JSONL（兜底，永远立即执行）
 
 调用 `record_time_saved.py` 脚本，**必须捕获其完整标准输出**（stdout）：
 
@@ -170,65 +171,29 @@ python scripts/record_time_saved.py \
 
 > 如果用户用的是人天，则用 `--person-days {人天数}` 代替 `--hours`。脚本内部自动换算为小时存储。
 
-#### 4b. 实时同步到腾讯文档智能表格（cloud 模式）
+#### 4b. 集中存储说明（storage_mode=mysql，v1.5.0 起生效）
 
-仅当 `config/time_tracking_config.yaml` 中 `storage_mode="cloud"` 时执行。
+仅当 `config/time_tracking_config.yaml` 中 `storage_mode="mysql"` 时执行本说明。
 
-**严禁手动构造 `add_records` 参数**。必须从 4a 脚本输出的 stdout 中**精确提取**以 `CLOUD_SYNC_JSON: ` 开头的那一行，将该行之后的 JSON 直接作为参数调用 MCP 工具 **`mcp__tencent-docs__smartsheet.add_records`**。
+**AI 无需实时调用任何云 API**。数据已在 4a 写入本地 JSONL，由本机**定时任务**（每日 12:00/18:00，`sync_to_mysql.py`）自动幂等 upsert 到共享 MySQL 表 `agent_time_tracking`。
 
-提取示例：
+**确认信息中标注**（告知用户数据去向）：
 
 ```
-脚本输出：
-  ...
-  CLOUD_SYNC_JSON: {"file_id": "NJsgqBKwrNux", "sheet_id": "t00i2h", "records": [{...}]}
-
-提取后的 add_records 入参：
-  {"file_id": "NJsgqBKwrNux", "sheet_id": "t00i2h", "records": [{...}]}
+📡 已写入本地记录，将在下次定时同步（每日 12:00 / 18:00）自动同步到团队共享 MySQL 数据库。
 ```
 
-**调用要求**：
-- 必须原样传递脚本输出的 JSON，**不得重新拼接字段、不得省略字段、不得修改字段名**
-- `records[0].field_values` 必须包含：员工姓名、用户故事、步骤、步骤编码、节省小时数、节省人天数、折算总小时、业务线（备注非空时追加）
-- 如果 4a 输出中没有 `CLOUD_SYNC_JSON:` 行，说明 storage_mode 不是 cloud 或配置缺失，**跳过 4b 和 4c**，并在确认信息中标注"⚠️ 未启用云端同步，仅本地已记录"
-
-**同步结果处理**：
-- **成功**：继续执行 4c 验证
-- **失败**（连接器未连接 / MCP 调用报错）：**不阻塞工作流**，本地 JSONL 已有记录（4a 兜底），在确认信息中标注"⚠️ 智能表格同步失败（{错误信息}），本地已记录。请检查腾讯文档连接器是否已连接。"
-
-#### 4c. 同步后验证（cloud 模式，v4 新增）
-
-调用 `add_records` 成功后，**必须立即调用 `mcp__tencent-docs__smartsheet.list_records`** 验证数据确实写入：
-
-```json
-{
-  "file_id": "{doc_id}",
-  "sheet_id": "{sheet_id}",
-  "limit": 5
-}
-```
-
-**验证规则**：
-- 在最近 1 分钟内新增的记录中，检查是否存在与本次记录匹配的「员工姓名」和「用户故事」
-- **验证通过**：继续执行第 5 步，标注"📡 已实时同步到团队智能表格"
-- **验证失败**（新记录为空或不匹配）：**必须重试一次 4b**（重新从脚本输出中提取 `CLOUD_SYNC_JSON` 并调用 `add_records`）
-  - 重试后再次执行 4c 验证
-  - 若仍失败：不阻塞工作流，在确认信息中标注"⚠️ 智能表格同步写入异常（验证未通过），本地已记录。请联系管理员检查表格字段配置。"
+> 若用户手动触发同步（管理员操作）：运行 `python scripts/sync_to_mysql.py --biz-line 效贷` 立即同步。
+> 注意：记录自动携带用户故事编号（user_story_code），供 MySQL 端按故事维度统计。
 
 ### 第 5 步：确认记录
 
-**根据 4b/4c 的结果显示对应状态**：
+**显示记录成功状态**：
 
 ```
 ✅ 已记录：{员工} 在 {用户故事} 的 {步骤名称} 环节节省了 {hours} 小时（{person_days} 人天）。
-   📡 已实时同步到团队智能表格。
+   📡 已写入本地，将在下次定时同步（每日 12:00 / 18:00）自动同步到团队共享 MySQL。
 ```
-
-> 如果 4b 同步失败或 4c 验证连续两次未通过，则显示：
-> ```
-> ✅ 已记录：{员工} 在 {用户故事} 的 {步骤名称} 环节节省了 {hours} 小时（{person_days} 人天）。
->    ⚠️ 智能表格同步异常（{错误信息}），本地已记录。请检查腾讯文档连接器是否已连接，或联系管理员检查表格字段配置。
-> ```
 
 ---
 
@@ -241,7 +206,7 @@ python scripts/record_time_saved.py \
 - "效能统计" / "节省了多少时间" / "时间节省统计" / "工时统计"
 - "我的时间统计" / "个人时间报告"
 
-> **重要**：触发后**不等于**只在聊天里展示表格/数字。触发后必须按下面完整流程执行：**读取数据 → 识别报告范围（个人/管理员）→ 生成 HTML 报告 → 调用 present_files 展示 → 上传到腾讯文档【我的文档】（cloud 模式）→ 回复中给出本地路径和在线链接**。
+> **重要**：触发后**不等于**只在聊天里展示表格/数字。触发后必须按下面完整流程执行：**读取数据（MySQL）→ 识别报告范围（个人/管理员）→ 生成 HTML 报告 → 调用 present_files 展示 → 回复中给出本地路径**。
 
 ### 报告范围识别（必须先做，在数据读取之前）
 
@@ -256,111 +221,32 @@ python scripts/record_time_saved.py \
 
 ### 数据来源（按 storage_mode 分支，必须严格按当前模式执行）
 
-**storage_mode=cloud 时（当前生效）**：
+**storage_mode=mysql 时（v1.5.0 起当前生效）**：
 
-> **严禁读取本地 Excel 或仅读本地 JSONL**。cloud 模式下数据源是腾讯文档智能表格，必须从云端读取。
+> 数据源是共享 MySQL 表 `agent_time_tracking`。读取本机 `mysql_config.json` 连接 MySQL 查询全量数据，**不读本地 Excel，也不直接读本地 JSONL**（MySQL 才是权威汇总）。
 
 执行步骤：
 
-1. **读取配置**：读取 `config/time_tracking_config.yaml`，获取 `tencent_docs.doc_id`（即 file_id）和 `tencent_docs.sheet_id`（即 sheet_id）
+1. **读取本机配置**：读取 `~/.workbuddy/data/time-tracking/效贷/mysql_config.json`（含 host/port/user/password/database，由 `init_mysql_config.py` 生成）
 
-2. **调用 MCP 读取全量数据**：使用工具 `mcp__tencent-docs__smartsheet.list_records`，参数：
-   ```json
-   {
-     "file_id": "{doc_id}",
-     "sheet_id": "{sheet_id}",
-     "limit": 500
-   }
+2. **从 MySQL 查询全量数据**：使用 `scripts/mysql_query_all.py`（或 pymysql 直接查询）执行：
+   ```sql
+   SELECT * FROM agent_time_tracking WHERE biz_line = '效贷' ORDER BY recorded_at ASC
    ```
-   > 如果连接器未连接，告知用户"腾讯文档连接器未连接，无法读取云端数据"，不要 fallback 到本地数据。
 
-3. **转换数据格式**：将返回的 `records` 数组中每条记录的 `field_values` 转换为扁平 JSON 对象。转换规则：
-   - `text_value.items[0].text` → 字符串值
-   - `number_value` → 数值
-   - `string_value` → 字符串值（如记录时间的时间戳）
-   - 字段映射：员工姓名→employee、用户故事→user_story、步骤→step、步骤编码→step_code、节省小时数→time_saved_hours、节省人天数→time_saved_pd、折算总小时→total_hours、业务线→biz_line、备注→remark
+3. **写入临时 JSON 文件**：将查询结果按字段（employee/user_story/step/step_code/time_saved_hours/time_saved_pd/total_hours/biz_line/remark/recorded_at/date/user_story_code）写入 `~/.workbuddy/data/time-tracking/效贷/_mysql_data.json`
 
-4. **写入临时 JSON 文件**：将转换后的记录列表写入 `~/.workbuddy/data/time-tracking/效贷/_cloud_sync.json`
-
-5. **生成本地 HTML 报告**：
+4. **生成本地 HTML 报告**：
    - 测试人员（普通员工）：
    ```bash
-   python scripts/generate_time_analytics.py --biz-line "效贷" --person "{姓名}" --input ~/.workbuddy/data/time-tracking/效贷/_cloud_sync.json
+   python scripts/generate_time_analytics.py --biz-line "效贷" --person "{姓名}" --input ~/.workbuddy/data/time-tracking/效贷/_mysql_data.json
    ```
    - 管理员：
    ```bash
-   python scripts/generate_time_analytics.py --biz-line "效贷" --input ~/.workbuddy/data/time-tracking/效贷/_cloud_sync.json
+   python scripts/generate_time_analytics.py --biz-line "效贷" --input ~/.workbuddy/data/time-tracking/效贷/_mysql_data.json
    ```
 
-6. **【cloud 模式】将 HTML 报告上传到腾讯文档【我的文档】**（v4.1 新增，强制）：
-
-   > **目的**：让测试人员随时可以在 WorkBuddy【更多】-【腾讯文件】-【我的文档】中打开 HTML 格式的报告，内容与管理员看到的报告完全一致。
-   >
-   > 上传失败**不阻塞**本地报告展示，但必须尝试并告知用户结果。
-
-   执行步骤：
-
-   1. **读取上传配置**：从 `config/time_tracking_config.yaml` 读取：
-      - `tencent_docs.skill_dir`：tencent-docs skill 目录（默认 `~/.workbuddy/skills/skill_2053084036212973568`）
-      - `tencent_docs.report_title`：报告标题（默认 "效贷测试专家节省时间报告"），上传后在腾讯文档列表中显示为该名称
-      - `tencent_docs.report_file_id`：已上传报告的 file_id（可能为空）
-      - `tencent_docs.report_url`：已上传报告的 URL（可能为空）
-
-   2. **定位打包脚本**：
-      - 主路径：`{skill_dir}/aipage_pack.js`
-      - 如果主路径不存在，在 `~/.workbuddy/skills/**/aipage_pack.js` 中搜索
-
-   3. **打包 HTML 为 `.aipage`**：
-      ```bash
-      node {skill_dir}/aipage_pack.js --html {report_path} --title "{report_title}"
-      ```
-      从输出中解析：
-      - `AIPAGE_PATH` → 打包后的 .aipage 文件路径
-      - `AIPAGE_SIZE` → 文件大小（字节）
-      - `AIPAGE_MD5` → 文件 MD5
-      - `AIPAGE_TITLE` → 文件标题
-
-   4. **获取 COS 上传链接**：调用 MCP 工具 `mcp__tencent-docs__manage.pre_import`：
-      ```json
-      {
-        "file_name": "{report_title}",
-        "file_size": {AIPAGE_SIZE},
-        "file_md5": "{AIPAGE_MD5}"
-      }
-      ```
-      > 使用 `report_title` 作为腾讯文档中的文件名称，确保上传后列表显示为固定名称。
-      从返回中解析 `upload_url`、`file_key`、`task_id`。
-
-   5. **PUT 上传到 COS**：
-      ```bash
-      curl -sS -X PUT -H "Content-Type: application/octet-stream" --data-binary "@{AIPAGE_PATH}" "{upload_url}"
-      ```
-      HTTP 2xx 表示上传成功。
-
-   6. **触发异步导入**：调用 MCP 工具 `mcp__tencent-docs__manage.async_import`：
-      ```json
-      {
-        "task_id": "{task_id}",
-        "file_key": "{file_key}",
-        "file_name": "{report_title}",
-        "file_md5": "{AIPAGE_MD5}",
-        "file_size": {AIPAGE_SIZE}
-      }
-      ```
-
-   7. **轮询导入进度**：每 3 秒调用一次 `mcp__tencent-docs__manage.import_progress`，最多 60 秒：
-      ```json
-      {"task_id": "{task_id}"}
-      ```
-      直到返回 `progress=100` 或出现 `error`。成功时从返回中读取 `file_id` 和 `file_url`。
-
-   8. **清理旧报告（可选但推荐）**：如果配置中已有 `report_file_id`，调用 `mcp__tencent-docs__manage.delete_file` 删除旧文件，避免【我的文档】中出现多个同名报告。
-
-   9. **回填配置**：将新的 `file_id` 和 `file_url` 写回 `config/time_tracking_config.yaml` 的 `tencent_docs.report_file_id` 和 `tencent_docs.report_url`。
-
-   10. **异常处理**：
-       - 任一步骤失败，在最终回复中标注 `⚠️ 报告已生成本地文件，但上传到腾讯文档失败：{错误信息}`
-       - 上传失败**不影响**本地报告的 `present_files` 展示
+> 若 MySQL 连接失败（未生成 mysql_config.json / 网络不通）：告知用户"⚠️ 无法连接共享 MySQL，请先运行 `init_mysql_config.py` 生成配置或联系管理员检查数据库"；此时可**降级读取本地 JSONL**（`records.jsonl`）生成报告并注明数据可能不完整。
 
 **storage_mode=excel 时**：
 1. 读取 `config/time_tracking_config.yaml` 获取 `excel.file_path`
@@ -371,26 +257,21 @@ python scripts/record_time_saved.py \
 
 ### 输出与展示（强制规则，不可跳过）
 
-> **⚠️ 硬性要求**：每次查看时间统计时，**必须同时完成以下五项**，缺一不可；**任何一项未完成，都禁止发送最终回复**。
+> **⚠️ 硬性要求**：每次查看时间统计时，**必须同时完成以下三项**，缺一不可；**任何一项未完成，都禁止发送最终回复**。
 > 1. **生成 HTML 报告文件**：测试人员 → `time_analytics_效贷_{姓名}.html`，管理员 → `time_analytics_效贷.html`
 > 2. **调用 `present_files` 工具展示报告** — 这是 WorkBuddy 工具调用，必须自动在右侧面板打开 HTML 预览
 > 3. **在对话回复中附上报告文件的本地完整路径**，供用户直接访问
-> 4. **【cloud 模式】将 HTML 报告上传到腾讯文档【我的文档】，并在回复中附上在线访问链接**
-> 5. **在回复中告知腾讯文档内的具体导航路径**：【更多】-【我的文件】-【任务成果】，对应文件可在该空间/分组中查看
 >
-> **禁止行为**：禁止只以聊天表格/文字播报数字；禁止生成报告但不调用 `present_files`；禁止不上传腾讯文档或不给出链接；禁止用"我已在上方展示数据"等理由跳过文件生成与上传；禁止忽略腾讯文档导航路径提示；禁止测试人员报告展示非本人的数据。
+> **禁止行为**：禁止只以聊天表格/文字播报数字；禁止生成报告但不调用 `present_files`；禁止用"我已在上方展示数据"等理由跳过文件生成；禁止测试人员报告展示非本人的数据。
 
 **执行顺序**：
 
 1. **先识别人物身份**：根据会话开始时的花名册验证结果，判断是测试人员还是管理员
 2. 生成 HTML 报告文件（测试人员传 `--person "{姓名}"`）
 3. **立即**调用 `present_files` 工具展示报告（右侧面板打开预览）
-4. **cloud 模式**：立即执行 aipage 上传工作流（见上方第 6 步）
-5. 在最终回复中依次给出：
+4. 在最终回复中依次给出：
    - 报告类型说明（个人/业务线）
    - 本地完整路径（如 `C:\Users\kingdee\.workbuddy\data\time-tracking\效贷\time_analytics_效贷_何甜.html`）
-   - cloud 模式：腾讯文档在线访问链接（如 `https://docs.qq.com/smartpage/xxxx`）或上传失败说明
-   - 腾讯文档导航路径：【更多】-【我的文件】-【任务成果】（在【任务成果】分组下可找到该 HTML 文件）
    - 简要关键数字（**以人天为主展示**）
    - 提示：HTML 报告内已内置筛选查询面板，可按员工/步骤/日期维度（月/季度/年）/用户故事名称灵活查询
 
@@ -433,11 +314,9 @@ python scripts/record_time_saved.py \
 ```
 
 **回复前自检清单（必须逐项确认）**：
-- [ ] HTML 文件 `time_analytics_效贷.html` 已生成
+- [ ] HTML 文件 `time_analytics_效贷.html`（或个人版）已生成
 - [ ] `present_files` 工具已调用（右侧面板已打开 HTML 预览）
 - [ ] 最终回复中包含报告的本地完整路径
-- [ ] cloud 模式：已尝试上传腾讯文档【我的文档】，并在回复中给出在线链接或失败说明
-- [ ] 最终回复中告知腾讯文档导航路径：【更多】-【我的文件】-【任务成果】
 
 > 若缺少任意一项，**必须补完后再发送回复**。
 
@@ -451,7 +330,7 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 
 ## 六、初始化集中存储（管理员操作）
 
-### 方案 A：Excel 文件（推荐，无需腾讯文档授权）
+### 方案 A：Excel 文件（备选，无需 MySQL 授权）
 
 当管理员说"初始化时间追踪 Excel"时：
 
@@ -466,22 +345,23 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 
 > 管理员也可在【更多】-【我的文件】中上传一个空白 Excel，然后告知 AI 文件路径，AI 直接写入。
 >
-> ⚠️ 当前已切换到 cloud 模式，Excel 模式不再使用。如需切回 Excel 模式，将 `storage_mode` 改为 `"excel"` 即可。
+> ⚠️ 当前已切换到 MySQL 模式（v1.5.0 起），Excel 模式不再使用。如需切回 Excel 模式，将 `storage_mode` 改为 `"excel"` 即可。
 
-### 方案 B：腾讯文档智能表格（需企业账号授权）
+### 方案 B：MySQL 共享数据库（v1.5.0 起当前生效）
 
-当管理员连接腾讯文档连接器后：
+当管理员说"初始化时间追踪数据库"时：
 
-1. 确认 tencent-docs 连接器已连接
-2. 读取 `config/smartsheet_template.yaml` 获取字段定义
-3. 调用 tencent-docs skill 创建智能表格，表名"效贷时间追踪表"
-4. 按模板定义创建字段（记录时间、员工姓名、用户故事、步骤等）
-5. 将返回的 doc_id 和 doc_url 回填到 `config/time_tracking_config.yaml`
-6. 将 storage_mode 改为 "cloud"
-7. 将智能表格链接分享给全团队（吴香康、周峰、何甜），授予编辑权限
-8. 通知所有员工：下次使用专家时数据将自动同步到共享表格
+1. 确认 MySQL 服务端已建库建表：表 `agent_time_tracking`，唯一键 `record_key`（MD5(biz_line_code|employee|user_story|step_code|timestamp秒)）
+2. 将数据库连接信息（host/port/database/账号/密码）告知各测试人员（密码不要写入专家包或 Git）
+3. 通知所有测试人员在本机运行：
+   ```bash
+   python scripts/init_mysql_config.py --biz-line 效贷
+   ```
+   按提示输入连接信息，生成本机 `~/.workbuddy/data/time-tracking/效贷/mysql_config.json`
+4. 将 `config/time_tracking_config.yaml` 的 `storage_mode` 改为 `"mysql"`
+5. 配置定时同步任务（每日 12:00/18:00 调用 `scripts/sync_to_mysql.py`，Windows 用 schtasks / .bat）
 
-> 初始化指令：用户说"初始化时间追踪表格"时触发此流程。
+> 初始化指令：用户说"初始化时间追踪数据库"或"初始化 MySQL"时触发此流程。
 
 ---
 
@@ -493,7 +373,7 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 |------|------|--------|
 | 本地 | 仅 JSONL，无集中存储 | `local` |
 | Excel | JSONL + Excel 文件（管理员分发或共享目录） | `excel` |
-| 云端 | JSONL + 腾讯文档智能表格（需授权） | `cloud` |
+| MySQL | JSONL + 定时任务幂等同步到共享 MySQL（v1.5.0 起当前生效） | `mysql` |
 
 ### 本地存储（始终启用，作为兜底）
 
@@ -502,20 +382,17 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 ├── records.jsonl                  # 原始记录（JSONL，每行一条）
 ├── time_analytics_效贷.html       # HTML 分析报告
 ├── time_analytics_效贷.csv        # CSV 导出（按需生成）
-└── _cloud_sync.json               # 云端同步数据临时文件
+├── _mysql_data.json               # MySQL 查询数据临时文件（查看统计时生成）
+└── mysql_config.json              # 本机 MySQL 连接凭证（含密码，不随专家包分发）
 ```
 
-### 腾讯文档在线报告（storage_mode=cloud 时）
+### MySQL 存储（storage_mode=mysql 时，v1.5.0 起）
 
-每次生成 `time_analytics_效贷.html` 后，AI 会将其打包为 `.aipage` 并导入腾讯文档作为 `smartpage`，存放到当前账号的【我的文档】。file_id 和 url 记录在 `config/time_tracking_config.yaml` 的 `tencent_docs.report_file_id` / `report_url` 中，后续生成会覆盖同一文件（先删除旧文件再上传新文件）。
+共享 MySQL 表 `agent_time_tracking`，所有员工数据汇总。同步由本机定时任务（每日 12:00/18:00 调用 `sync_to_mysql.py`）幂等 upsert 完成，唯一键 `record_key`（MD5(biz_line_code|employee|user_story|step_code|timestamp秒)），重复同步不产生重复数据。
 
 ### Excel 存储（storage_mode=excel 时）
 
 管理员指定的 Excel 文件，包含表头和数据行。所有员工共享（通过共享目录或定期收集合并）。
-
-### 云端存储（storage_mode=cloud 时）
-
-腾讯文档智能表格"效贷时间追踪表"，所有员工共享，实时可见。
 
 ### 数据格式（每条记录，存储单位统一为小时）
 
@@ -553,6 +430,6 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 6. **会话缓存**：员工姓名（身份确认后）和用户故事（首次填写后）在会话内缓存。
 7. **业务线隔离**：所有记录固定 `biz_line="效贷"`。
 8. **统一存储单位**：底层存储统一为小时（1人天=8小时），报告展示以人天为主。
-9. **双写策略**：excel/cloud 模式下同时写本地 JSONL 和集中存储，本地为兜底。
+9. **双写策略**：mysql/excel 模式下同时写本地 JSONL 和集中存储，本地为兜底；MySQL 同步由定时任务完成，AI 无需实时调用云 API。
 10. **报告公开**：任何员工都可查看全团队统计数据，无权限分级。
-11. **【强制】报告必展示且必上传（cloud 模式，未完成禁止回复）**：每次查看时间统计时，必须同时完成五件事——① 生成 HTML 报告；② 调用 `present_files` 工具在右侧面板打开预览；③ 在对话回复中附上报告本地完整路径；④ 将报告上传到腾讯文档【我的文档】并附上在线链接；⑤ 在对话回复中告知腾讯文档导航路径【更多】-【我的文件】-【任务成果】。五者缺一不可，缺少任意一项时**禁止发送最终回复**。禁止只以聊天表格/文字播报数字，禁止用"数据已在上方展示"等理由跳过文件生成与上传。
+11. **【强制】报告必展示（未完成禁止回复）**：每次查看时间统计时，必须同时完成三件事——① 生成 HTML 报告；② 调用 `present_files` 工具在右侧面板打开预览；③ 在对话回复中附上报告本地完整路径。三者缺一不可，缺少任意一项时**禁止发送最终回复**。禁止只以聊天表格/文字播报数字，禁止用"数据已在上方展示"等理由跳过文件生成。报告仅本地展示，不涉及腾讯文档上传。
