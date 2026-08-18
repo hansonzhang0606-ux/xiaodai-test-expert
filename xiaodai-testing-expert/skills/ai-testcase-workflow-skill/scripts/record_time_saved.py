@@ -1,1 +1,409 @@
-IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwojIC0qLSBjb2Rpbmc6IHV0Zi04IC0qLQoiIiIK5pe26Ze06IqC55yB6K6w5b2V6ISa5pysIHYzCuWcqOW3peS9nOa1geavj+S4quatpemqpOWujOaIkOWQju+8jOiusOW9leivpeatpemqpOS4uuS6uuexu+WRmOW3peiKguecgeS6huWkmuWwkeaXtumXtOOAggoKdjMg5pS56L+bOgogIC0g5LqM5qyh56Gu6K6k77ya6ISa5pys5LuF6LSf6LSj6K6w5b2V77yM56Gu6K6k6YC76L6R55SxIEFJIOWcqOiwg+eUqOWJjeWujOaIkAogIC0g57uf5LiA5a2Y5YKo5Y2V5L2N77ya5bqV5bGC5aeL57uI5Lul5bCP5pe25a2Y5YKo77yMdGltZV9zYXZlZF9wZCDkuLrmjaLnrpflgLwKICAtIEV4Y2VsIOWQjOatpe+8mnN0b3JhZ2VfbW9kZT1leGNlbCDml7boh6rliqjov73liqDliLAgRXhjZWwg5paH5Lu2CiAgLSDoirHlkI3lhozmoKHpqowgKyDlj4LogIPml7bpl7TlsZXnpLoKCueUqOazlToKICBweXRob24gcmVjb3JkX3RpbWVfc2F2ZWQucHkgXAogICAgLS1lbXBsb3llZSAi5ZC06aaZ5bq3IiBcCiAgICAtLXVzZXItc3RvcnkgIlVTLTAwMS3otLfmrL7lrqHmibnmtYHnqIvkvJjljJYiIFwKICAgIC0tc3RlcCAi5paH5qGj5pW055CGIiBcCiAgICAtLXN0ZXAtY29kZSAiMDEiIFwKICAgIC0taG91cnMgNC4wIFwKICAgIC0tYml6LWxpbmUgIuaViOi0tyIgXAogICAgLS1yZW1hcmsgIuWOn+acrOmcgOimgeaJi+WKqOaVtOeQhjXkuKrmlofmoaMiCgogICMg5Lmf5Y+v5Lul55So5Lq65aSp5Li65Y2V5L2N6L6T5YWl77yM6ISa5pys6Ieq5Yqo5o2i566X5Li65bCP5pe25a2Y5YKoCiAgcHl0aG9uIHJlY29yZF90aW1lX3NhdmVkLnB5IFwKICAgIC0tZW1wbG95ZWUgIuWRqOWzsCIgXAogICAgLS11c2VyLXN0b3J5ICJVUy0wMDEiIFwKICAgIC0tc3RlcCAi55So5L6L57uG5YyWIiBcCiAgICAtLXN0ZXAtY29kZSAiMDYiIFwKICAgIC0tcGVyc29uLWRheXMgMS41IFwKICAgIC0tYml6LWxpbmUgIuaViOi0tyIKCuaVsOaNruWtmOWCqOS9jee9rjoKICB+Ly53b3JrYnVkZHkvZGF0YS90aW1lLXRyYWNraW5nL3tiaXpfbGluZX0vcmVjb3Jkcy5qc29ubAogIO+8iGV4Y2VsIOaooeW8j+S4i+WQjOaXtuWGmeWFpemFjee9ruaMh+WumueahCBFeGNlbCDmlofku7bvvIkKIiIiCgppbXBvcnQgYXJncGFyc2UKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmltcG9ydCByZQppbXBvcnQgc3lzCmZyb20gZGF0ZXRpbWUgaW1wb3J0IGRhdGV0aW1lLCB0aW1lem9uZSwgdGltZWRlbHRhCgoKIyDmraXpqqTku6PnoIHmmKDlsIQKU1RFUF9NQVAgPSB7CiAgICAiMDEiOiAi5paH5qGj5pW055CGIiwKICAgICIwMiI6ICLpnIDmsYLor4TlrqEiLAogICAgIjA0IjogIueUn+aIkOa1i+ivleeCuSIsCiAgICAiMDYiOiAi55So5L6L57uG5YyWIiwKICAgICIwNyI6ICLnn6Xor4blhaXlupMiLAp9CgojIOWPguiAg+aXtumXtOihqApSRUZFUkVOQ0VfVElNRVMgPSB7CiAgICAiMDEiOiB7Im1pbiI6IDIuMCwgIm1heCI6IDQuMCwgInVuaXQiOiAi5bCP5pe2IiwgImJhc2lzIjogIuaMieaWh+aho+aVsOmHj+a1ruWKqO+8jDXkuKrku6XkuIrlj5bkuIrpmZAifSwKICAgICIwMiI6IHsibWluIjogMi4wLCAibWF4IjogMy4wLCAidW5pdCI6ICLlsI/ml7YiLCAiYmFzaXMiOiAiNue7tOW6puivhOWuoe+8iOWujOaVtOaApy/kuIDoh7TmgKcv6L6555WML+W8guW4uC/kvJjlhYjnuqcv5Y+v5rWL5oCn77yJIn0sCiAgICAiMDQiOiB7Im1pbiI6IDMuMCwgIm1heCI6IDUuMCwgInVuaXQiOiAi5bCP5pe2IiwgImJhc2lzIjogIuaMiemcgOaxguWkjeadguW6pua1ruWKqO+8jOWkmuezu+e7n+S6pOS6kuWPluS4iumZkCJ9LAogICAgIjA2IjogeyJtaW4iOiA0LjAsICJtYXgiOiA4LjAsICJ1bml0IjogIuWwj+aXtiIsICJiYXNpcyI6ICLmjInnlKjkvovmlbDph4/mta7liqjvvIwxMDDmnaHku6XkuIrlj5bkuIrpmZDvvIzlj6/nlKjkurrlpKkifSwKICAgICIwNyI6IHsibWluIjogMS4wLCAibWF4IjogMi4wLCAidW5pdCI6ICLlsI/ml7YiLCAiYmFzaXMiOiAi5oC757uTK+W3ruW8guWvueavlCvnsr7ljY7mj5Dngrwr5b2S5qGjIn0sCn0KCiMg5Lq65aSp5o2i566X77yIMeS6uuWkqSA9IDjlsI/ml7bvvIkKSE9VUlNfUEVSX1BEID0gOC4wCgojIOaVheS6i+e8luWPt+aPkOWPluato+WIme+8muWMuemFjSBQUkotMDA3Njk3MzYgLyBVUy0wMDEgLyBQLTEyMzQ1IOetieOAjOWJjee8gC3mlbDlrZfjgI3moLzlvI8KU1RPUllfQ09ERV9SRSA9IHJlLmNvbXBpbGUociIoW0EtWmEtel17MSw4fS1cZHszLH0pIikKCgpkZWYgZXh0cmFjdF91c2VyX3N0b3J5X2NvZGUodXNlcl9zdG9yeTogc3RyKSAtPiBzdHI6CiAgICAiIiLku47nlKjmiLfmlYXkuovmoIfpopjkuK3mj5Dlj5bnvJblj7fvvIjlpoIgJ1BSSi0wMDc2OTczNi3jgJDmlYjotLd4eHh444CRT0NS5b6B5L+h5oql5ZGK5rWL6aKdJyDihpIgJ1BSSi0wMDc2OTczNifvvIkiIiIKICAgIHVzID0gdXNlcl9zdG9yeSBvciAiIgogICAgbSA9IFNUT1JZX0NPREVfUkUuc2VhcmNoKHVzKQogICAgaWYgbToKICAgICAgICByZXR1cm4gbS5ncm91cCgxKQogICAgbSA9IHJlLnNlYXJjaChyIlxiXGR7NSx9XGIiLCB1cykKICAgIGlmIG06CiAgICAgICAgcmV0dXJuIG0uZ3JvdXAoMCkKICAgIHJldHVybiAiIgoKIyDoirHlkI3lhoznvJPlrZgKX3Jvc3Rlcl9jYWNoZSA9IE5vbmUKCgpkZWYgZ2V0X3NraWxsX2RpcigpIC0+IHN0cjoKICAgICIiIuiOt+WPliBza2lsbCDmoLnnm67lvZUiIiIKICAgIHJldHVybiBvcy5wYXRoLmRpcm5hbWUob3MucGF0aC5kaXJuYW1lKG9zLnBhdGguYWJzcGF0aChfX2ZpbGVfXykpKQoKCmRlZiBsb2FkX3RlYW1fcm9zdGVyKCkgLT4gZGljdDoKICAgICIiIuWKoOi9veiKseWQjeWGjCIiIgogICAgZ2xvYmFsIF9yb3N0ZXJfY2FjaGUKICAgIGlmIF9yb3N0ZXJfY2FjaGUgaXMgbm90IE5vbmU6CiAgICAgICAgcmV0dXJuIF9yb3N0ZXJfY2FjaGUKCiAgICByb3N0ZXJfcGF0aCA9IG9zLnBhdGguam9pbihnZXRfc2tpbGxfZGlyKCksICJjb25maWciLCAidGVhbV9yb3N0ZXIueWFtbCIpCiAgICBpZiBub3Qgb3MucGF0aC5leGlzdHMocm9zdGVyX3BhdGgpOgogICAgICAgIF9yb3N0ZXJfY2FjaGUgPSB7Im1lbWJlcnMiOiBbXX0KICAgICAgICByZXR1cm4gX3Jvc3Rlcl9jYWNoZQoKICAgICMg566A5Y2VIFlBTUwg6Kej5p6Q77yI6YG/5YWNIFB5WUFNTCDkvp3otZbvvIkKICAgIHRyeToKICAgICAgICBpbXBvcnQgeWFtbAogICAgICAgIHdpdGggb3Blbihyb3N0ZXJfcGF0aCwgInIiLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgICAgICAgICBfcm9zdGVyX2NhY2hlID0geWFtbC5zYWZlX2xvYWQoZikKICAgICAgICByZXR1cm4gX3Jvc3Rlcl9jYWNoZQogICAgZXhjZXB0IEltcG9ydEVycm9yOgogICAgICAgICMg5pegIFB5WUFNTCDml7bnlKjnroDmmJPop6PmnpAKICAgICAgICBtZW1iZXJzID0gW10KICAgICAgICBjdXJyZW50ID0ge30KICAgICAgICB3aXRoIG9wZW4ocm9zdGVyX3BhdGgsICJyIiwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgICAgICAgICAgZm9yIGxpbmUgaW4gZjoKICAgICAgICAgICAgICAgIGxpbmUgPSBsaW5lLnJzdHJpcCgpCiAgICAgICAgICAgICAgICBpZiBsaW5lLnN0cmlwKCkuc3RhcnRzd2l0aCgiLSBuYW1lOiIpOgogICAgICAgICAgICAgICAgICAgIGlmIGN1cnJlbnQ6CiAgICAgICAgICAgICAgICAgICAgICAgIG1lbWJlcnMuYXBwZW5kKGN1cnJlbnQpCiAgICAgICAgICAgICAgICAgICAgY3VycmVudCA9IHsibmFtZSI6IGxpbmUuc3BsaXQoIjoiLCAxKVsxXS5zdHJpcCgpLnN0cmlwKCciJyl9CiAgICAgICAgICAgICAgICBlbGlmICJyb2xlOiIgaW4gbGluZSBhbmQgY3VycmVudDoKICAgICAgICAgICAgICAgICAgICBjdXJyZW50WyJyb2xlIl0gPSBsaW5lLnNwbGl0KCI6IiwgMSlbMV0uc3RyaXAoKS5zdHJpcCgnIicpCiAgICAgICAgICAgICAgICBlbGlmICJhY3RpdmU6IiBpbiBsaW5lIGFuZCBjdXJyZW50OgogICAgICAgICAgICAgICAgICAgIGN1cnJlbnRbImFjdGl2ZSJdID0gbGluZS5zcGxpdCgiOiIsIDEpWzFdLnN0cmlwKCkuc3RyaXAoJyInKS5sb3dlcigpID09ICJ0cnVlIgogICAgICAgICAgICBpZiBjdXJyZW50OgogICAgICAgICAgICAgICAgbWVtYmVycy5hcHBlbmQoY3VycmVudCkKICAgICAgICBfcm9zdGVyX2NhY2hlID0geyJtZW1iZXJzIjogbWVtYmVyc30KICAgICAgICByZXR1cm4gX3Jvc3Rlcl9jYWNoZQoKCmRlZiB2YWxpZGF0ZV9lbXBsb3llZShlbXBsb3llZTogc3RyKSAtPiB0dXBsZToKICAgICIiIuagoemqjOWRmOW3peaYr+WQpuWcqOiKseWQjeWGjOS4rSIiIgogICAgcm9zdGVyID0gbG9hZF90ZWFtX3Jvc3RlcigpCiAgICBtZW1iZXJzID0gcm9zdGVyLmdldCgibWVtYmVycyIsIFtdKQogICAgYWN0aXZlX25hbWVzID0gW21bIm5hbWUiXSBmb3IgbSBpbiBtZW1iZXJzIGlmIG0uZ2V0KCJhY3RpdmUiLCBUcnVlKV0KICAgIGFsbF9uYW1lcyA9IFttWyJuYW1lIl0gZm9yIG0gaW4gbWVtYmVyc10KCiAgICBpZiBlbXBsb3llZSBpbiBhY3RpdmVfbmFtZXM6CiAgICAgICAgcmV0dXJuIFRydWUsICLlnKjogYwiCiAgICBlbGlmIGVtcGxveWVlIGluIGFsbF9uYW1lczoKICAgICAgICByZXR1cm4gRmFsc2UsICLlt7LnprvogYwv5YGc55SoIgogICAgZWxzZToKICAgICAgICByZXR1cm4gRmFsc2UsICLkuI3lnKjoirHlkI3lhozkuK0iCgoKZGVmIGdldF9kYXRhX2RpcihiaXpfbGluZTogc3RyKSAtPiBzdHI6CiAgICAiIiLojrflj5bmlbDmja7lrZjlgqjnm67lvZXvvIzkuI3lrZjlnKjliJnliJvlu7oiIiIKICAgIGhvbWUgPSBvcy5wYXRoLmV4cGFuZHVzZXIoIn4iKQogICAgZGF0YV9kaXIgPSBvcy5wYXRoLmpvaW4oaG9tZSwgIi53b3JrYnVkZHkiLCAiZGF0YSIsICJ0aW1lLXRyYWNraW5nIiwgYml6X2xpbmUpCiAgICBvcy5tYWtlZGlycyhkYXRhX2RpciwgZXhpc3Rfb2s9VHJ1ZSkKICAgIHJldHVybiBkYXRhX2RpcgoKCmRlZiBnZXRfcmVjb3Jkc19wYXRoKGJpel9saW5lOiBzdHIpIC0+IHN0cjoKICAgICIiIuiOt+WPliByZWNvcmRzLmpzb25sIOaWh+S7tui3r+W+hCIiIgogICAgcmV0dXJuIG9zLnBhdGguam9pbihnZXRfZGF0YV9kaXIoYml6X2xpbmUpLCAicmVjb3Jkcy5qc29ubCIpCgoKZGVmIHJlY29yZCgKICAgIGVtcGxveWVlOiBzdHIsCiAgICB1c2VyX3N0b3J5OiBzdHIsCiAgICBzdGVwOiBzdHIsCiAgICBzdGVwX2NvZGU6IHN0ciwKICAgIGhvdXJzOiBmbG9hdCA9IE5vbmUsCiAgICBwZXJzb25fZGF5czogZmxvYXQgPSBOb25lLAogICAgYml6X2xpbmU6IHN0ciA9ICLmlYjotLciLAogICAgcmVtYXJrOiBzdHIgPSAiIiwKICAgIHNraXBfdmFsaWRhdGlvbjogYm9vbCA9IEZhbHNlLAopOgogICAgIiIi6K6w5b2V5LiA5p2h5pe26Ze06IqC55yB5pWw5o2uIiIiCiAgICAjIOiKseWQjeWGjOagoemqjAogICAgaWYgbm90IHNraXBfdmFsaWRhdGlvbjoKICAgICAgICB2YWxpZCwgc3RhdHVzID0gdmFsaWRhdGVfZW1wbG95ZWUoZW1wbG95ZWUpCiAgICAgICAgaWYgbm90IHZhbGlkIGFuZCBzdGF0dXMgPT0gIuS4jeWcqOiKseWQjeWGjOS4rSI6CiAgICAgICAgICAgIHByaW50KGYi4pqg77iPICDorablkYrvvJrlkZjlt6UgJ3tlbXBsb3llZX0nIOS4jeWcqOaViOi0t+iKseWQjeWGjOS4reOAgiIsIGZpbGU9c3lzLnN0ZGVycikKICAgICAgICAgICAgcHJpbnQoZiIgICDoirHlkI3lhozlnKjogYzkurrlkZjvvJp7JywgJy5qb2luKG1bJ25hbWUnXSBmb3IgbSBpbiBsb2FkX3RlYW1fcm9zdGVyKCkuZ2V0KCdtZW1iZXJzJywgW10pIGlmIG0uZ2V0KCdhY3RpdmUnLCBUcnVlKSl9IiwgZmlsZT1zeXMuc3RkZXJyKQogICAgICAgICAgICBwcmludChmIiAgIOWmguehruS4uuatpOWRmOW3pe+8jOivt+iBlOezu+euoeeQhuWRmOa3u+WKoOWIsCBjb25maWcvdGVhbV9yb3N0ZXIueWFtbCIsIGZpbGU9c3lzLnN0ZGVycikKICAgICAgICAgICAgcHJpbnQoZiIgICDmnKzmrKHorrDlvZXku43kvJrkv53lrZjvvIzkvYblu7rorq7moLjlrp7jgIIiLCBmaWxlPXN5cy5zdGRlcnIpCiAgICAgICAgZWxpZiBub3QgdmFsaWQgYW5kIHN0YXR1cyA9PSAi5bey56a76IGML+WBnOeUqCI6CiAgICAgICAgICAgIHByaW50KGYi4pqg77iPICDorablkYrvvJrlkZjlt6UgJ3tlbXBsb3llZX0nIOWcqOiKseWQjeWGjOS4reagh+iusOS4uuWBnOeUqOOAgiIsIGZpbGU9c3lzLnN0ZGVycikKCiAgICAjIOe7n+S4gOaNoueul+S4uuWwj+aXtu+8iHYz77ya5bqV5bGC5a2Y5YKo5aeL57uI5Li65bCP5pe277yJCiAgICB0aW1lX2hvdXJzID0gMC4wCiAgICB0aW1lX3BkID0gMC4wCgogICAgaWYgaG91cnMgaXMgbm90IE5vbmU6CiAgICAgICAgdGltZV9ob3VycyArPSBmbG9hdChob3VycykKICAgIGlmIHBlcnNvbl9kYXlzIGlzIG5vdCBOb25lOgogICAgICAgIHRpbWVfcGQgKz0gZmxvYXQocGVyc29uX2RheXMpCgogICAgIyDkurrlpKnmjaLnrpfkuLrlsI/ml7bvvIznu5/kuIDku6XlsI/ml7bkuLrln7rlh4YKICAgIHRvdGFsX2hvdXJzID0gcm91bmQodGltZV9ob3VycyArIHRpbWVfcGQgKiBIT1VSU19QRVJfUEQsIDIpCiAgICAjIOS6uuWkqSA9IOaAu+Wwj+aXtiAvIDgKICAgIHRpbWVfcGQgPSByb3VuZCh0b3RhbF9ob3VycyAvIEhPVVJTX1BFUl9QRCwgMikKICAgIHRpbWVfaG91cnMgPSB0b3RhbF9ob3VycwoKICAgICMg6Ieq5Yqo6KGl5YWo5q2l6aqk5ZCN56ewCiAgICBpZiBzdGVwX2NvZGUgYW5kIG5vdCBzdGVwOgogICAgICAgIHN0ZXAgPSBTVEVQX01BUC5nZXQoc3RlcF9jb2RlLCBzdGVwX2NvZGUpCiAgICBpZiBzdGVwIGFuZCBub3Qgc3RlcF9jb2RlOgogICAgICAgIGZvciBjb2RlLCBuYW1lIGluIFNURVBfTUFQLml0ZW1zKCk6CiAgICAgICAgICAgIGlmIG5hbWUgPT0gc3RlcDoKICAgICAgICAgICAgICAgIHN0ZXBfY29kZSA9IGNvZGUKICAgICAgICAgICAgICAgIGJyZWFrCgogICAgbm93ID0gZGF0ZXRpbWUubm93KHRpbWV6b25lKHRpbWVkZWx0YShob3Vycz04KSkpCgogICAgcmVjb3JkID0gewogICAgICAgICJ0aW1lc3RhbXAiOiBub3cuaXNvZm9ybWF0KCksCiAgICAgICAgImRhdGUiOiBub3cuc3RyZnRpbWUoIiVZLSVtLSVkIiksCiAgICAgICAgImJpel9saW5lIjogYml6X2xpbmUsCiAgICAgICAgImVtcGxveWVlIjogZW1wbG95ZWUsCiAgICAgICAgInVzZXJfc3RvcnkiOiB1c2VyX3N0b3J5LAogICAgICAgICJ1c2VyX3N0b3J5X2NvZGUiOiBleHRyYWN0X3VzZXJfc3RvcnlfY29kZSh1c2VyX3N0b3J5KSwKICAgICAgICAic3RlcCI6IHN0ZXAsCiAgICAgICAgInN0ZXBfY29kZSI6IHN0ZXBfY29kZSwKICAgICAgICAidGltZV9zYXZlZF9ob3VycyI6IHRpbWVfaG91cnMsCiAgICAgICAgInRpbWVfc2F2ZWRfcGQiOiB0aW1lX3BkLAogICAgICAgICJ0b3RhbF9ob3VycyI6IHRvdGFsX2hvdXJzLAogICAgICAgICJyZW1hcmsiOiByZW1hcmssCiAgICB9CgogICAgcmVjb3Jkc19wYXRoID0gZ2V0X3JlY29yZHNfcGF0aChiaXpfbGluZSkKCiAgICB3aXRoIG9wZW4ocmVjb3Jkc19wYXRoLCAiYSIsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIGY6CiAgICAgICAgZi53cml0ZShqc29uLmR1bXBzKHJlY29yZCwgZW5zdXJlX2FzY2lpPUZhbHNlKSArICJcbiIpCgogICAgIyDovpPlh7rlj4LogIPml7bpl7QKICAgIHJlZiA9IFJFRkVSRU5DRV9USU1FUy5nZXQoc3RlcF9jb2RlLCB7fSkKICAgIHJlZl9zdHIgPSAiIgogICAgaWYgcmVmOgogICAgICAgIHJlZl9zdHIgPSBmIiAgIOWPguiAg+aXtumXtDoge3JlZlsnbWluJ119fntyZWZbJ21heCddfSB7cmVmWyd1bml0J11977yIe3JlZlsnYmFzaXMnXX3vvIlcbiIKCiAgICBwcmludChmIuKchSDlt7LorrDlvZXml7bpl7ToioLnnIHmlbDmja4iKQogICAgcHJpbnQoZiIgICDlkZjlt6U6IHtlbXBsb3llZX0iKQogICAgcHJpbnQoZiIgICDnlKjmiLfmlYXkuos6IHt1c2VyX3N0b3J5fSIpCiAgICBjb2RlID0gcmVjb3JkLmdldCgidXNlcl9zdG9yeV9jb2RlIiwgIiIpCiAgICBpZiBjb2RlOgogICAgICAgIHByaW50KGYiICAg5pWF5LqL57yW5Y+3OiB7Y29kZX0iKQogICAgcHJpbnQoZiIgICDmraXpqqQ6IHtzdGVwfSAoe3N0ZXBfY29kZX0pIikKICAgIHByaW50KGYiICAg6IqC55yB5pe26Ze0OiB7dGltZV9wZH0g5Lq65aSp77yIe3RpbWVfaG91cnN9IOWwj+aXtu+8iSIpCiAgICBwcmludChmIiAgIOWtmOWCqOWNleS9jTog5bCP5pe277yIe3RvdGFsX2hvdXJzfWjvvIkiKQogICAgcHJpbnQoZiIgICDkuJrliqHnur86IHtiaXpfbGluZX0iKQogICAgaWYgcmVmX3N0cjoKICAgICAgICBwcmludChyZWZfc3RyLCBlbmQ9IiIpCiAgICBpZiByZW1hcms6CiAgICAgICAgcHJpbnQoZiIgICDlpIfms6g6IHtyZW1hcmt9IikKICAgIHByaW50KGYiICAg5a2Y5YKo5L2N572uOiB7cmVjb3Jkc19wYXRofSIpCgogICAgIyBFeGNlbCDlkIzmraXvvIhzdG9yYWdlX21vZGU9ZXhjZWwg5pe277yJCiAgICB0cnk6CiAgICAgICAgc3luY190b19leGNlbF9pZl9jb25maWd1cmVkKHJlY29yZCwgYml6X2xpbmUpCiAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGU6CiAgICAgICAgcHJpbnQoZiLimqDvuI8gIEV4Y2VsIOWQjOatpeWksei0pe+8iOS4jeW9seWTjeacrOWcsOiusOW9le+8iToge2V9IiwgZmlsZT1zeXMuc3RkZXJyKQoKICAgICMgQ2xvdWQg5ZCM5q2lIEpTT04g6L6T5Ye677yIc3RvcmFnZV9tb2RlPWNsb3VkIOaXtu+8jEFJIOaPkOWPluWQjuiwg+eUqCBNQ1DvvIkKICAgIHRyeToKICAgICAgICBjbG91ZF9zeW5jX2pzb24gPSBidWlsZF9jbG91ZF9zeW5jX2pzb24ocmVjb3JkLCBiaXpfbGluZSkKICAgICAgICBpZiBjbG91ZF9zeW5jX2pzb246CiAgICAgICAgICAgIHByaW50KCJDTE9VRF9TWU5DX0pTT046ICIgKyBqc29uLmR1bXBzKGNsb3VkX3N5bmNfanNvbiwgZW5zdXJlX2FzY2lpPUZhbHNlKSkKICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZToKICAgICAgICBwcmludChmIuKaoO+4jyAgQ2xvdWQg5ZCM5q2lIEpTT04g5p6E6YCg5aSx6LSl77yI5LiN5b2x5ZON5pys5Zyw6K6w5b2V77yJOiB7ZX0iLCBmaWxlPXN5cy5zdGRlcnIpCgogICAgcmV0dXJuIHJlY29yZAoKCmRlZiBsb2FkX3RyYWNraW5nX2NvbmZpZygpIC0+IGRpY3Q6CiAgICAiIiLliqDovb3ml7bpl7Tov73ouKrphY3nva4iIiIKICAgIGNvbmZpZ19wYXRoID0gb3MucGF0aC5qb2luKGdldF9za2lsbF9kaXIoKSwgImNvbmZpZyIsICJ0aW1lX3RyYWNraW5nX2NvbmZpZy55YW1sIikKICAgIGlmIG5vdCBvcy5wYXRoLmV4aXN0cyhjb25maWdfcGF0aCk6CiAgICAgICAgcmV0dXJuIHt9CiAgICB0cnk6CiAgICAgICAgaW1wb3J0IHlhbWwKICAgICAgICB3aXRoIG9wZW4oY29uZmlnX3BhdGgsICJyIiwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgICAgICAgICAgcmV0dXJuIHlhbWwuc2FmZV9sb2FkKGYpIG9yIHt9CiAgICBleGNlcHQgSW1wb3J0RXJyb3I6CiAgICAgICAgIyDnroDmmJPop6PmnpAKICAgICAgICBjb25maWcgPSB7fQogICAgICAgIHdpdGggb3Blbihjb25maWdfcGF0aCwgInIiLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgICAgICAgICBmb3IgbGluZSBpbiBmOgogICAgICAgICAgICAgICAgbGluZSA9IGxpbmUuc3RyaXAoKQogICAgICAgICAgICAgICAgaWYgbGluZS5zdGFydHN3aXRoKCJzdG9yYWdlX21vZGU6Iik6CiAgICAgICAgICAgICAgICAgICAgY29uZmlnWyJzdG9yYWdlX21vZGUiXSA9IGxpbmUuc3BsaXQoIjoiLCAxKVsxXS5zdHJpcCgpLnN0cmlwKCciJykKICAgICAgICByZXR1cm4gY29uZmlnCgoKZGVmIHN5bmNfdG9fZXhjZWxfaWZfY29uZmlndXJlZChyZWNvcmQ6IGRpY3QsIGJpel9saW5lOiBzdHIpOgogICAgIiIi5aaC5p6c6YWN572u5LqGIGV4Y2VsIOWtmOWCqOaooeW8j++8jOWwhuiusOW9lei/veWKoOWIsCBFeGNlbCIiIgogICAgY29uZmlnID0gbG9hZF90cmFja2luZ19jb25maWcoKQogICAgc3RvcmFnZV9tb2RlID0gY29uZmlnLmdldCgic3RvcmFnZV9tb2RlIiwgImxvY2FsIikKCiAgICBpZiBzdG9yYWdlX21vZGUgIT0gImV4Y2VsIjoKICAgICAgICByZXR1cm4KCiAgICBleGNlbF9jb25maWcgPSBjb25maWcuZ2V0KCJleGNlbCIsIHt9KQogICAgZXhjZWxfcGF0aCA9IGV4Y2VsX2NvbmZpZy5nZXQoImZpbGVfcGF0aCIsICIiKQoKICAgIGlmIG5vdCBleGNlbF9wYXRoOgogICAgICAgIHByaW50KCLimqDvuI8gIHN0b3JhZ2VfbW9kZT1leGNlbCDkvYbmnKrphY3nva4gZXhjZWwuZmlsZV9wYXRo77yM6Lez6L+HIEV4Y2VsIOWQjOatpSIsIGZpbGU9c3lzLnN0ZGVycikKICAgICAgICByZXR1cm4KCiAgICAjIOWxleW8gCB+IOS4uueUqOaIt+S4u+ebruW9lQogICAgZXhjZWxfcGF0aCA9IG9zLnBhdGguZXhwYW5kdXNlcihleGNlbF9wYXRoKQoKICAgICMg6LCD55SoIHN5bmNfdG9fZXhjZWwg55qE6L+95Yqg6YC76L6RCiAgICBmcm9tIHN5bmNfdG9fZXhjZWwgaW1wb3J0IGFwcGVuZF9yZWNvcmRfdG9fZXhjZWwKICAgIGFwcGVuZF9yZWNvcmRfdG9fZXhjZWwoZXhjZWxfcGF0aCwgcmVjb3JkKQogICAgcHJpbnQoZiLwn5OKIOW3suWQjOatpeWIsCBFeGNlbDoge2V4Y2VsX3BhdGh9IikKCgpkZWYgYnVpbGRfY2xvdWRfc3luY19qc29uKHJlY29yZDogZGljdCwgYml6X2xpbmU6IHN0cikgLT4gZGljdDoKICAgICIiIuWmguaenOmFjee9ruS6hiBjbG91ZCDlrZjlgqjmqKHlvI/vvIzmnoTpgKAgbWNwX190ZW5jZW50LWRvY3NfX3NtYXJ0c2hlZXQuYWRkX3JlY29yZHMg55qE5Y+C5pWwIEpTT04KCiAgICDov5Tlm57nmoQgZGljdCDlj6/ku6Xnm7TmjqXkvZzkuLogYWRkX3JlY29yZHMg55qE5YWl5Y+C77yI5YyF5ZCrIGZpbGVfaWQgLyBzaGVldF9pZCAvIHJlY29yZHPvvInjgIIKICAgIOiEmuacrOacrOi6q+S4jeiwg+eUqCBNQ1DvvIzku4XovpPlh7ogSlNPTiDkvpsgQUkg5o+Q5Y+W5bm26L2s5Y+R44CCCiAgICAiIiIKICAgIGNvbmZpZyA9IGxvYWRfdHJhY2tpbmdfY29uZmlnKCkKICAgIHN0b3JhZ2VfbW9kZSA9IGNvbmZpZy5nZXQoInN0b3JhZ2VfbW9kZSIsICJsb2NhbCIpCgogICAgaWYgc3RvcmFnZV9tb2RlICE9ICJjbG91ZCI6CiAgICAgICAgcmV0dXJuIE5vbmUKCiAgICB0ZW5jZW50X2NvbmZpZyA9IGNvbmZpZy5nZXQoInRlbmNlbnRfZG9jcyIsIHt9KQogICAgZmlsZV9pZCA9IHRlbmNlbnRfY29uZmlnLmdldCgiZG9jX2lkIiwgIiIpCiAgICBzaGVldF9pZCA9IHRlbmNlbnRfY29uZmlnLmdldCgic2hlZXRfaWQiLCAiIikKCiAgICBpZiBub3QgZmlsZV9pZCBvciBub3Qgc2hlZXRfaWQ6CiAgICAgICAgcHJpbnQoIuKaoO+4jyAgc3RvcmFnZV9tb2RlPWNsb3VkIOS9huacqumFjee9riB0ZW5jZW50X2RvY3MuZG9jX2lkL3NoZWV0X2lk77yM6Lez6L+HIENsb3VkIOWQjOatpSBKU09OIOaehOmAoCIsIGZpbGU9c3lzLnN0ZGVycikKICAgICAgICByZXR1cm4gTm9uZQoKICAgIGZpZWxkX21hcHBpbmcgPSB0ZW5jZW50X2NvbmZpZy5nZXQoImZpZWxkX21hcHBpbmciLCBbXSkKCiAgICAjIOagueaNriBmaWVsZF9tYXBwaW5nIOaehOmAoCBmaWVsZF92YWx1ZXMKICAgIGZpZWxkX3ZhbHVlcyA9IFtdCiAgICBmb3IgbWFwcGluZyBpbiBmaWVsZF9tYXBwaW5nOgogICAgICAgIGpzb25fa2V5ID0gbWFwcGluZy5nZXQoImpzb25fa2V5IiwgIiIpCiAgICAgICAgZmllbGRfbmFtZSA9IG1hcHBpbmcuZ2V0KCJmaWVsZCIsICIiKQogICAgICAgIHZhbHVlX3R5cGUgPSBtYXBwaW5nLmdldCgidmFsdWVfdHlwZSIsICJ0ZXh0X3ZhbHVlIikKICAgICAgICBvcHRpb25hbCA9IG1hcHBpbmcuZ2V0KCJvcHRpb25hbCIsIEZhbHNlKQoKICAgICAgICBpZiBub3QganNvbl9rZXkgb3Igbm90IGZpZWxkX25hbWU6CiAgICAgICAgICAgIGNvbnRpbnVlCgogICAgICAgIHZhbHVlID0gcmVjb3JkLmdldChqc29uX2tleSwgIiIpCiAgICAgICAgaWYgdmFsdWUgPT0gIiIgYW5kIG9wdGlvbmFsOgogICAgICAgICAgICBjb250aW51ZQoKICAgICAgICBpZiB2YWx1ZV90eXBlID09ICJ0ZXh0X3ZhbHVlIjoKICAgICAgICAgICAgZmllbGRfdmFsdWVzLmFwcGVuZCh7CiAgICAgICAgICAgICAgICAiZmllbGQiOiBmaWVsZF9uYW1lLAogICAgICAgICAgICAgICAgInRleHRfdmFsdWUiOiB7CiAgICAgICAgICAgICAgICAgICAgIml0ZW1zIjogW3sidGV4dCI6IHN0cih2YWx1ZSksICJ0eXBlIjogInRleHQifV0KICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSkKICAgICAgICBlbGlmIHZhbHVlX3R5cGUgPT0gIm51bWJlcl92YWx1ZSI6CiAgICAgICAgICAgIHRyeToKICAgICAgICAgICAgICAgIG51bV92YWx1ZSA9IGZsb2F0KHZhbHVlKSBpZiB2YWx1ZSAhPSAiIiBlbHNlIDAuMAogICAgICAgICAgICBleGNlcHQgKFZhbHVlRXJyb3IsIFR5cGVFcnJvcik6CiAgICAgICAgICAgICAgICBudW1fdmFsdWUgPSAwLjAKICAgICAgICAgICAgZmllbGRfdmFsdWVzLmFwcGVuZCh7CiAgICAgICAgICAgICAgICAiZmllbGQiOiBmaWVsZF9uYW1lLAogICAgICAgICAgICAgICAgIm51bWJlcl92YWx1ZSI6IG51bV92YWx1ZQogICAgICAgICAgICB9KQogICAgICAgIGVsc2U6CiAgICAgICAgICAgICMg5YW25LuW57G75Z6L57uf5LiA5oyJIHRleHQg5aSE55CGCiAgICAgICAgICAgIGZpZWxkX3ZhbHVlcy5hcHBlbmQoewogICAgICAgICAgICAgICAgImZpZWxkIjogZmllbGRfbmFtZSwKICAgICAgICAgICAgICAgICJ0ZXh0X3ZhbHVlIjogewogICAgICAgICAgICAgICAgICAgICJpdGVtcyI6IFt7InRleHQiOiBzdHIodmFsdWUpLCAidHlwZSI6ICJ0ZXh0In1dCiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0pCgogICAgcmV0dXJuIHsKICAgICAgICAiZmlsZV9pZCI6IGZpbGVfaWQsCiAgICAgICAgInNoZWV0X2lkIjogc2hlZXRfaWQsCiAgICAgICAgInJlY29yZHMiOiBbeyJmaWVsZF92YWx1ZXMiOiBmaWVsZF92YWx1ZXN9XQogICAgfQoKCmRlZiBtYWluKCk6CiAgICBwYXJzZXIgPSBhcmdwYXJzZS5Bcmd1bWVudFBhcnNlcihkZXNjcmlwdGlvbj0i6K6w5b2V5pe26Ze06IqC55yB5pWw5o2uIHYyIikKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tZW1wbG95ZWUiLCByZXF1aXJlZD1UcnVlLCBoZWxwPSLlkZjlt6Xlp5PlkI3vvIjpnIDlnKjoirHlkI3lhozkuK3vvIkiKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS11c2VyLXN0b3J5IiwgcmVxdWlyZWQ9VHJ1ZSwgaGVscD0i55So5oi35pWF5LqL5ZCN56ewL+e8luWPtyIpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLXN0ZXAiLCBkZWZhdWx0PSIiLCBoZWxwPSLmraXpqqTlkI3np7DvvIjlpoLvvJrmlofmoaPmlbTnkIbvvIkiKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1zdGVwLWNvZGUiLCBkZWZhdWx0PSIiLCBoZWxwPSLmraXpqqTku6PnoIHvvIgwMS8wMi8wNC8wNi8wN++8iSIpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLWhvdXJzIiwgdHlwZT1mbG9hdCwgZGVmYXVsdD1Ob25lLCBoZWxwPSLoioLnnIHml7bpl7TvvIjlsI/ml7bvvIkiKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1wZXJzb24tZGF5cyIsIHR5cGU9ZmxvYXQsIGRlZmF1bHQ9Tm9uZSwgaGVscD0i6IqC55yB5pe26Ze077yI5Lq65aSp77yJIikKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tYml6LWxpbmUiLCBkZWZhdWx0PSLmlYjotLciLCBoZWxwPSLkuJrliqHnur/vvIjpu5jorqTvvJrmlYjotLfvvIkiKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1yZW1hcmsiLCBkZWZhdWx0PSIiLCBoZWxwPSLlpIfms6giKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS1za2lwLXZhbGlkYXRpb24iLCBhY3Rpb249InN0b3JlX3RydWUiLCBoZWxwPSLot7Pov4foirHlkI3lhozmoKHpqowiKQoKICAgIGFyZ3MgPSBwYXJzZXIucGFyc2VfYXJncygpCgogICAgaWYgYXJncy5ob3VycyBpcyBOb25lIGFuZCBhcmdzLnBlcnNvbl9kYXlzIGlzIE5vbmU6CiAgICAgICAgcHJpbnQoIumUmeivr++8muW/hemhu+aMh+WumiAtLWhvdXJzIOaIliAtLXBlcnNvbi1kYXlzIiwgZmlsZT1zeXMuc3RkZXJyKQogICAgICAgIHN5cy5leGl0KDEpCgogICAgcmVjb3JkKAogICAgICAgIGVtcGxveWVlPWFyZ3MuZW1wbG95ZWUsCiAgICAgICAgdXNlcl9zdG9yeT1hcmdzLnVzZXJfc3RvcnksCiAgICAgICAgc3RlcD1hcmdzLnN0ZXAsCiAgICAgICAgc3RlcF9jb2RlPWFyZ3Muc3RlcF9jb2RlLAogICAgICAgIGhvdXJzPWFyZ3MuaG91cnMsCiAgICAgICAgcGVyc29uX2RheXM9YXJncy5wZXJzb25fZGF5cywKICAgICAgICBiaXpfbGluZT1hcmdzLmJpel9saW5lLAogICAgICAgIHJlbWFyaz1hcmdzLnJlbWFyaywKICAgICAgICBza2lwX3ZhbGlkYXRpb249YXJncy5za2lwX3ZhbGlkYXRpb24sCiAgICApCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIG1haW4oKQo=
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+时间节省记录脚本 v3
+在工作流每个步骤完成后，记录该步骤为人类员工节省了多少时间。
+
+v3 改进:
+  - 二次确认：脚本仅负责记录，确认逻辑由 AI 在调用前完成
+  - 统一存储单位：底层始终以小时存储，time_saved_pd 为换算值
+  - Excel 同步：storage_mode=excel 时自动追加到 Excel 文件
+  - 花名册校验 + 参考时间展示
+
+用法:
+  python record_time_saved.py \
+    --employee "吴香康" \
+    --user-story "US-001-贷款审批流程优化" \
+    --step "文档整理" \
+    --step-code "01" \
+    --hours 4.0 \
+    --biz-line "效贷" \
+    --remark "原本需要手动整理5个文档"
+
+  # 也可以用人天为单位输入，脚本自动换算为小时存储
+  python record_time_saved.py \
+    --employee "周峰" \
+    --user-story "US-001" \
+    --step "用例细化" \
+    --step-code "06" \
+    --person-days 1.5 \
+    --biz-line "效贷"
+
+数据存储位置:
+  ~/.workbuddy/data/time-tracking/{biz_line}/records.jsonl
+  （excel 模式下同时写入配置指定的 Excel 文件）
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+from datetime import datetime, timezone, timedelta
+
+
+# 步骤代码映射
+STEP_MAP = {
+    "01": "文档整理",
+    "02": "需求评审",
+    "04": "生成测试点",
+    "06": "用例细化",
+    "07": "知识入库",
+}
+
+# 参考时间表
+REFERENCE_TIMES = {
+    "01": {"min": 2.0, "max": 4.0, "unit": "小时", "basis": "按文档数量浮动，5个以上取上限"},
+    "02": {"min": 2.0, "max": 3.0, "unit": "小时", "basis": "6维度评审（完整性/一致性/边界/异常/优先级/可测性）"},
+    "04": {"min": 3.0, "max": 5.0, "unit": "小时", "basis": "按需求复杂度浮动，多系统交互取上限"},
+    "06": {"min": 4.0, "max": 8.0, "unit": "小时", "basis": "按用例数量浮动，100条以上取上限，可用人天"},
+    "07": {"min": 1.0, "max": 2.0, "unit": "小时", "basis": "总结+差异对比+精华提炼+归档"},
+}
+
+# 人天换算（1人天 = 8小时）
+HOURS_PER_PD = 8.0
+
+# 故事编号提取正则：匹配 PRJ-00769736 / US-001 / P-12345 等「前缀-数字」格式
+STORY_CODE_RE = re.compile(r"([A-Za-z]{1,8}-\d{3,})")
+
+
+def extract_user_story_code(user_story: str) -> str:
+    """从用户故事标题中提取编号（如 'PRJ-00769736-【效贷xxxx】OCR征信报告测额' → 'PRJ-00769736'）"""
+    us = user_story or ""
+    m = STORY_CODE_RE.search(us)
+    if m:
+        return m.group(1)
+    m = re.search(r"\b\d{5,}\b", us)
+    if m:
+        return m.group(0)
+    return ""
+
+# 花名册缓存
+_roster_cache = None
+
+
+def get_skill_dir() -> str:
+    """获取 skill 根目录"""
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def load_team_roster() -> dict:
+    """加载花名册"""
+    global _roster_cache
+    if _roster_cache is not None:
+        return _roster_cache
+
+    roster_path = os.path.join(get_skill_dir(), "config", "team_roster.yaml")
+    if not os.path.exists(roster_path):
+        _roster_cache = {"members": []}
+        return _roster_cache
+
+    # 简单 YAML 解析（避免 PyYAML 依赖）
+    try:
+        import yaml
+        with open(roster_path, "r", encoding="utf-8") as f:
+            _roster_cache = yaml.safe_load(f)
+        return _roster_cache
+    except ImportError:
+        # 无 PyYAML 时用简易解析
+        members = []
+        current = {}
+        with open(roster_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.rstrip()
+                if line.strip().startswith("- name:"):
+                    if current:
+                        members.append(current)
+                    current = {"name": line.split(":", 1)[1].strip().strip('"')}
+                elif "role:" in line and current:
+                    current["role"] = line.split(":", 1)[1].strip().strip('"')
+                elif "active:" in line and current:
+                    current["active"] = line.split(":", 1)[1].strip().strip('"').lower() == "true"
+            if current:
+                members.append(current)
+        _roster_cache = {"members": members}
+        return _roster_cache
+
+
+def validate_employee(employee: str) -> tuple:
+    """校验员工是否在花名册中"""
+    roster = load_team_roster()
+    members = roster.get("members", [])
+    active_names = [m["name"] for m in members if m.get("active", True)]
+    all_names = [m["name"] for m in members]
+
+    if employee in active_names:
+        return True, "在职"
+    elif employee in all_names:
+        return False, "已离职/停用"
+    else:
+        return False, "不在花名册中"
+
+
+def get_data_dir(biz_line: str) -> str:
+    """获取数据存储目录，不存在则创建"""
+    home = os.path.expanduser("~")
+    data_dir = os.path.join(home, ".workbuddy", "data", "time-tracking", biz_line)
+    os.makedirs(data_dir, exist_ok=True)
+    return data_dir
+
+
+def get_records_path(biz_line: str) -> str:
+    """获取 records.jsonl 文件路径"""
+    return os.path.join(get_data_dir(biz_line), "records.jsonl")
+
+
+def record(
+    employee: str,
+    user_story: str,
+    step: str,
+    step_code: str,
+    hours: float = None,
+    person_days: float = None,
+    biz_line: str = "效贷",
+    remark: str = "",
+    skip_validation: bool = False,
+):
+    """记录一条时间节省数据"""
+    # 花名册校验
+    if not skip_validation:
+        valid, status = validate_employee(employee)
+        if not valid and status == "不在花名册中":
+            print(f"⚠️  警告：员工 '{employee}' 不在效贷花名册中。", file=sys.stderr)
+            print(f"   花名册在职人员：{', '.join(m['name'] for m in load_team_roster().get('members', []) if m.get('active', True))}", file=sys.stderr)
+            print(f"   如确为此员工，请联系管理员添加到 config/team_roster.yaml", file=sys.stderr)
+            print(f"   本次记录仍会保存，但建议核实。", file=sys.stderr)
+        elif not valid and status == "已离职/停用":
+            print(f"⚠️  警告：员工 '{employee}' 在花名册中标记为停用。", file=sys.stderr)
+
+    # 统一换算为小时（v3：底层存储始终为小时）
+    time_hours = 0.0
+    time_pd = 0.0
+
+    if hours is not None:
+        time_hours += float(hours)
+    if person_days is not None:
+        time_pd += float(person_days)
+
+    # 人天换算为小时，统一以小时为基准
+    total_hours = round(time_hours + time_pd * HOURS_PER_PD, 2)
+    # 人天 = 总小时 / 8
+    time_pd = round(total_hours / HOURS_PER_PD, 2)
+    time_hours = total_hours
+
+    # 自动补全步骤名称
+    if step_code and not step:
+        step = STEP_MAP.get(step_code, step_code)
+    if step and not step_code:
+        for code, name in STEP_MAP.items():
+            if name == step:
+                step_code = code
+                break
+
+    now = datetime.now(timezone(timedelta(hours=8)))
+
+    record = {
+        "timestamp": now.isoformat(),
+        "date": now.strftime("%Y-%m-%d"),
+        "biz_line": biz_line,
+        "employee": employee,
+        "user_story": user_story,
+        "user_story_code": extract_user_story_code(user_story),
+        "step": step,
+        "step_code": step_code,
+        "time_saved_hours": time_hours,
+        "time_saved_pd": time_pd,
+        "total_hours": total_hours,
+        "remark": remark,
+    }
+
+    records_path = get_records_path(biz_line)
+
+    with open(records_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    # 输出参考时间
+    ref = REFERENCE_TIMES.get(step_code, {})
+    ref_str = ""
+    if ref:
+        ref_str = f"   参考时间: {ref['min']}~{ref['max']} {ref['unit']}（{ref['basis']}）\n"
+
+    print(f"✅ 已记录时间节省数据")
+    print(f"   员工: {employee}")
+    print(f"   用户故事: {user_story}")
+    code = record.get("user_story_code", "")
+    if code:
+        print(f"   故事编号: {code}")
+    print(f"   步骤: {step} ({step_code})")
+    print(f"   节省时间: {time_pd} 人天（{time_hours} 小时）")
+    print(f"   存储单位: 小时（{total_hours}h）")
+    print(f"   业务线: {biz_line}")
+    if ref_str:
+        print(ref_str, end="")
+    if remark:
+        print(f"   备注: {remark}")
+    print(f"   存储位置: {records_path}")
+
+    # Excel 同步（storage_mode=excel 时）
+    try:
+        sync_to_excel_if_configured(record, biz_line)
+    except Exception as e:
+        print(f"⚠️  Excel 同步失败（不影响本地记录）: {e}", file=sys.stderr)
+
+    # Cloud 同步 JSON 输出（storage_mode=cloud 时，AI 提取后调用 MCP）
+    try:
+        cloud_sync_json = build_cloud_sync_json(record, biz_line)
+        if cloud_sync_json:
+            print("CLOUD_SYNC_JSON: " + json.dumps(cloud_sync_json, ensure_ascii=False))
+    except Exception as e:
+        print(f"⚠️  Cloud 同步 JSON 构造失败（不影响本地记录）: {e}", file=sys.stderr)
+
+    return record
+
+
+def load_tracking_config() -> dict:
+    """加载时间追踪配置"""
+    config_path = os.path.join(get_skill_dir(), "config", "time_tracking_config.yaml")
+    if not os.path.exists(config_path):
+        return {}
+    try:
+        import yaml
+        with open(config_path, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+    except ImportError:
+        # 简易解析
+        config = {}
+        with open(config_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("storage_mode:"):
+                    config["storage_mode"] = line.split(":", 1)[1].strip().strip('"')
+        return config
+
+
+def sync_to_excel_if_configured(record: dict, biz_line: str):
+    """如果配置了 excel 存储模式，将记录追加到 Excel"""
+    config = load_tracking_config()
+    storage_mode = config.get("storage_mode", "local")
+
+    if storage_mode != "excel":
+        return
+
+    excel_config = config.get("excel", {})
+    excel_path = excel_config.get("file_path", "")
+
+    if not excel_path:
+        print("⚠️  storage_mode=excel 但未配置 excel.file_path，跳过 Excel 同步", file=sys.stderr)
+        return
+
+    # 展开 ~ 为用户主目录
+    excel_path = os.path.expanduser(excel_path)
+
+    # 调用 sync_to_excel 的追加逻辑
+    from sync_to_excel import append_record_to_excel
+    append_record_to_excel(excel_path, record)
+    print(f"📊 已同步到 Excel: {excel_path}")
+
+
+def build_cloud_sync_json(record: dict, biz_line: str) -> dict:
+    """如果配置了 cloud 存储模式，构造 mcp__tencent-docs__smartsheet.add_records 的参数 JSON
+
+    返回的 dict 可以直接作为 add_records 的入参（包含 file_id / sheet_id / records）。
+    脚本本身不调用 MCP，仅输出 JSON 供 AI 提取并转发。
+    """
+    config = load_tracking_config()
+    storage_mode = config.get("storage_mode", "local")
+
+    if storage_mode != "cloud":
+        return None
+
+    tencent_config = config.get("tencent_docs", {})
+    file_id = tencent_config.get("doc_id", "")
+    sheet_id = tencent_config.get("sheet_id", "")
+
+    if not file_id or not sheet_id:
+        print("⚠️  storage_mode=cloud 但未配置 tencent_docs.doc_id/sheet_id，跳过 Cloud 同步 JSON 构造", file=sys.stderr)
+        return None
+
+    field_mapping = tencent_config.get("field_mapping", [])
+
+    # 根据 field_mapping 构造 field_values
+    field_values = []
+    for mapping in field_mapping:
+        json_key = mapping.get("json_key", "")
+        field_name = mapping.get("field", "")
+        value_type = mapping.get("value_type", "text_value")
+        optional = mapping.get("optional", False)
+
+        if not json_key or not field_name:
+            continue
+
+        value = record.get(json_key, "")
+        if value == "" and optional:
+            continue
+
+        if value_type == "text_value":
+            field_values.append({
+                "field": field_name,
+                "text_value": {
+                    "items": [{"text": str(value), "type": "text"}]
+                }
+            })
+        elif value_type == "number_value":
+            try:
+                num_value = float(value) if value != "" else 0.0
+            except (ValueError, TypeError):
+                num_value = 0.0
+            field_values.append({
+                "field": field_name,
+                "number_value": num_value
+            })
+        else:
+            # 其他类型统一按 text 处理
+            field_values.append({
+                "field": field_name,
+                "text_value": {
+                    "items": [{"text": str(value), "type": "text"}]
+                }
+            })
+
+    return {
+        "file_id": file_id,
+        "sheet_id": sheet_id,
+        "records": [{"field_values": field_values}]
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="记录时间节省数据 v2")
+    parser.add_argument("--employee", required=True, help="员工姓名（需在花名册中）")
+    parser.add_argument("--user-story", required=True, help="用户故事名称/编号")
+    parser.add_argument("--step", default="", help="步骤名称（如：文档整理）")
+    parser.add_argument("--step-code", default="", help="步骤代码（01/02/04/06/07）")
+    parser.add_argument("--hours", type=float, default=None, help="节省时间（小时）")
+    parser.add_argument("--person-days", type=float, default=None, help="节省时间（人天）")
+    parser.add_argument("--biz-line", default="效贷", help="业务线（默认：效贷）")
+    parser.add_argument("--remark", default="", help="备注")
+    parser.add_argument("--skip-validation", action="store_true", help="跳过花名册校验")
+
+    args = parser.parse_args()
+
+    if args.hours is None and args.person_days is None:
+        print("错误：必须指定 --hours 或 --person-days", file=sys.stderr)
+        sys.exit(1)
+
+    record(
+        employee=args.employee,
+        user_story=args.user_story,
+        step=args.step,
+        step_code=args.step_code,
+        hours=args.hours,
+        person_days=args.person_days,
+        biz_line=args.biz_line,
+        remark=args.remark,
+        skip_validation=args.skip_validation,
+    )
+
+
+if __name__ == "__main__":
+    main()

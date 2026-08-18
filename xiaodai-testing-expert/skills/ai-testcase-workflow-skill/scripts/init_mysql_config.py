@@ -1,1 +1,123 @@
-IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwojIC0qLSBjb2Rpbmc6IHV0Zi04IC0qLQoiIiIK5Yid5aeL5YyWIE15U1FMIOacrOWcsOmFjee9ruaWh+S7tu+8iOWNleS4muWKoee6v++8iQoK5q2k6ISa5pys5LiN5omT5YyF5Lu75L2V55yf5a6e5Yet5o2u77yM5a6J6KOF5LiT5a625YyF5ZCO55Sx5rWL6K+V5Lq65ZGY5Zyo6Ieq5bex55S16ISR5LiK6L+Q6KGM5LiA5qyh77yMCueUn+aIkOacrOacuuS4k+eUqOeahCBteXNxbF9jb25maWcuanNvbu+8jOS+m+WQjue7rSBzeW5jX3RvX215c3FsLnB5IOWumuaXtuWQjOatpeS9v+eUqOOAggoK55So5rOVOgogIHB5dGhvbiBpbml0X215c3FsX2NvbmZpZy5weSAtLWJpei1saW5lIOaViOi0twogIHB5dGhvbiBpbml0X215c3FsX2NvbmZpZy5weSAtLWJpei1saW5lIOaViOi0tyAtLXBhc3N3b3JkICJ4eHgiIC0tbm8taW50ZXJhY3RpdmUKIiIiCgppbXBvcnQgYXJncGFyc2UKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmltcG9ydCBzeXMKCkhPTUUgPSBvcy5wYXRoLmV4cGFuZHVzZXIoIn4iKQoKIyDmlYjotLfkuJrliqHnur/pu5jorqTmlbDmja7lupPphY3nva7vvIjku4Xpu5jorqTov57mjqXkv6Hmga/vvIzlr4bnoIHnu53kuI3lhpnlhaXku7vkvZXmlofku7bvvIkKREVGQVVMVF9EQl9DT05GSUcgPSB7CiAgICAi5pWI6LS3IjogewogICAgICAgICJob3N0IjogIjE3Mi4yMC4xNDguMzYiLAogICAgICAgICJwb3J0IjogMzMwNiwKICAgICAgICAidXNlciI6ICJyb290IiwKICAgICAgICAiZGF0YWJhc2UiOiAiYXV0b19lZmZpY2llbmN5X3BsYXRmb3JtX2RldiIsCiAgICAgICAgInRhYmxlIjogImFnZW50X3RpbWVfdHJhY2tpbmciLAogICAgfQp9CgoKZGVmIGdldF9kYXRhX2RpcihiaXpfbGluZSk6CiAgICByZXR1cm4gb3MucGF0aC5qb2luKEhPTUUsICIud29ya2J1ZGR5IiwgImRhdGEiLCAidGltZS10cmFja2luZyIsIGJpel9saW5lKQoKCmRlZiBwcm9tcHRfd2l0aF9kZWZhdWx0KGxhYmVsLCBkZWZhdWx0LCBoaWRlPUZhbHNlKToKICAgICIiIuS6pOS6kuW8j+aPkOekuu+8jOW4pum7mOiupOWAvO+8m2hpZGU9VHJ1ZSDml7bkuI3lm57mmL7ovpPlhaUiIiIKICAgIGlmIGhpZGU6CiAgICAgICAgdHJ5OgogICAgICAgICAgICBpbXBvcnQgZ2V0cGFzcwogICAgICAgICAgICB2YWx1ZSA9IGdldHBhc3MuZ2V0cGFzcyhmIntsYWJlbH0gW3tkZWZhdWx0fV06ICIpLnN0cmlwKCkKICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICB2YWx1ZSA9IGlucHV0KGYie2xhYmVsfSBbe2RlZmF1bHR9XTogIikuc3RyaXAoKQogICAgZWxzZToKICAgICAgICB2YWx1ZSA9IGlucHV0KGYie2xhYmVsfSBbe2RlZmF1bHR9XTogIikuc3RyaXAoKQogICAgcmV0dXJuIHZhbHVlIGlmIHZhbHVlIGVsc2UgZGVmYXVsdAoKCmRlZiBtYWluKCk6CiAgICBwYXJzZXIgPSBhcmdwYXJzZS5Bcmd1bWVudFBhcnNlcihkZXNjcmlwdGlvbj0i5Yid5aeL5YyWIE15U1FMIOacrOWcsOmFjee9ruaWh+S7tiIpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLWJpei1saW5lIiwgZGVmYXVsdD0i5pWI6LS3IiwgaGVscD0i5Lia5Yqh57q/77yI6buY6K6k77ya5pWI6LS377yJIikKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0taG9zdCIsIGhlbHA9Ik15U1FMIOS4u+acuiIpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLXBvcnQiLCB0eXBlPWludCwgaGVscD0iTXlTUUwg56uv5Y+jIikKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tdXNlciIsIGhlbHA9Ik15U1FMIOeUqOaIt+WQjSIpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLXBhc3N3b3JkIiwgZGVmYXVsdD1Ob25lLCBoZWxwPSJNeVNRTCDlr4bnoIHvvIjlkb3ku6TooYznm7TmjqXkvKDkuI3lronlhajvvIzku4UgQ0kv6Ieq5Yqo5YyW5Zy65pmv5L2/55So77yJIikKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tZGF0YWJhc2UiLCBoZWxwPSLmlbDmja7lupPlkI0iKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgiLS10YWJsZSIsIGhlbHA9IuihqOWQjSIpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCItLW5vLWludGVyYWN0aXZlIiwgYWN0aW9uPSJzdG9yZV90cnVlIiwgaGVscD0i6Z2e5Lqk5LqS5qih5byP77yM5b+F6aG75ZG95Luk6KGM5Lyg6b2Q5omA5pyJ5Y+C5pWwIikKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoIi0tZm9yY2UiLCBhY3Rpb249InN0b3JlX3RydWUiLCBoZWxwPSLopobnm5blt7LlrZjlnKjnmoTphY3nva7mlofku7YiKQogICAgYXJncyA9IHBhcnNlci5wYXJzZV9hcmdzKCkKCiAgICBiaXpfbGluZSA9IGFyZ3MuYml6X2xpbmUKICAgIGRlZmF1bHRzID0gREVGQVVMVF9EQl9DT05GSUcuZ2V0KGJpel9saW5lLCB7CiAgICAgICAgImhvc3QiOiAiMTI3LjAuMC4xIiwKICAgICAgICAicG9ydCI6IDMzMDYsCiAgICAgICAgInVzZXIiOiAicm9vdCIsCiAgICAgICAgImRhdGFiYXNlIjogInlvdXJfZGF0YWJhc2UiLAogICAgICAgICJ0YWJsZSI6ICJhZ2VudF90aW1lX3RyYWNraW5nIiwKICAgIH0pCgogICAgZGF0YV9kaXIgPSBnZXRfZGF0YV9kaXIoYml6X2xpbmUpCiAgICBvcy5tYWtlZGlycyhkYXRhX2RpciwgZXhpc3Rfb2s9VHJ1ZSkKICAgIGNmZ19wYXRoID0gb3MucGF0aC5qb2luKGRhdGFfZGlyLCAibXlzcWxfY29uZmlnLmpzb24iKQoKICAgIGlmIG9zLnBhdGguZXhpc3RzKGNmZ19wYXRoKSBhbmQgbm90IGFyZ3MuZm9yY2U6CiAgICAgICAgcHJpbnQoZiLimqDvuI8gIOmFjee9ruaWh+S7tuW3suWtmOWcqDoge2NmZ19wYXRofSIsIGZpbGU9c3lzLnN0ZGVycikKICAgICAgICBwcmludCgiICAg5aaC6ZyA6YeN5paw55Sf5oiQ77yM6K+35Yig6Zmk6K+l5paH5Lu25oiW5YqgIC0tZm9yY2Ug5Y+C5pWw6KaG55uW44CCIiwgZmlsZT1zeXMuc3RkZXJyKQogICAgICAgIHN5cy5leGl0KDEpCgogICAgaWYgYXJncy5ub19pbnRlcmFjdGl2ZToKICAgICAgICBpZiBub3QgYXJncy5wYXNzd29yZDoKICAgICAgICAgICAgcHJpbnQoIkVSUk9SOiAtLW5vLWludGVyYWN0aXZlIOaooeW8j+S4i+W/hemhu+aPkOS+myAtLXBhc3N3b3JkIiwgZmlsZT1zeXMuc3RkZXJyKQogICAgICAgICAgICBzeXMuZXhpdCgxKQogICAgICAgIGNvbmZpZyA9IHsKICAgICAgICAgICAgImhvc3QiOiBhcmdzLmhvc3Qgb3IgZGVmYXVsdHNbImhvc3QiXSwKICAgICAgICAgICAgInBvcnQiOiBhcmdzLnBvcnQgb3IgZGVmYXVsdHNbInBvcnQiXSwKICAgICAgICAgICAgInVzZXIiOiBhcmdzLnVzZXIgb3IgZGVmYXVsdHNbInVzZXIiXSwKICAgICAgICAgICAgInBhc3N3b3JkIjogYXJncy5wYXNzd29yZCwKICAgICAgICAgICAgImRhdGFiYXNlIjogYXJncy5kYXRhYmFzZSBvciBkZWZhdWx0c1siZGF0YWJhc2UiXSwKICAgICAgICAgICAgInRhYmxlIjogYXJncy50YWJsZSBvciBkZWZhdWx0c1sidGFibGUiXSwKICAgICAgICAgICAgImNoYXJzZXQiOiAidXRmOG1iNCIsCiAgICAgICAgfQogICAgZWxzZToKICAgICAgICBwcmludCgiPSIgKiA2MCkKICAgICAgICBwcmludChmIuWIneWni+WMliB7Yml6X2xpbmV9IOS4muWKoee6vyBNeVNRTCDmnKzlnLDphY3nva4iKQogICAgICAgIHByaW50KCI9IiAqIDYwKQogICAgICAgIHByaW50KGYi6YWN572u5paH5Lu25bCG5L+d5a2Y5YiwOiB7Y2ZnX3BhdGh9IikKICAgICAgICBwcmludCgi5o+Q56S677ya5a+G56CB5LuF5L+d5a2Y5Zyo5pys5py677yM5LiN5Lya6ZqP5LiT5a625YyF5LiK5Lyg5oiW5YiG5Y+R44CCXG4iKQoKICAgICAgICBjb25maWcgPSB7CiAgICAgICAgICAgICJob3N0IjogcHJvbXB0X3dpdGhfZGVmYXVsdCgi5Li75py6IiwgYXJncy5ob3N0IG9yIGRlZmF1bHRzWyJob3N0Il0pLAogICAgICAgICAgICAicG9ydCI6IGludChwcm9tcHRfd2l0aF9kZWZhdWx0KCLnq6/lj6MiLCBzdHIoYXJncy5wb3J0IG9yIGRlZmF1bHRzWyJwb3J0Il0pKSksCiAgICAgICAgICAgICJ1c2VyIjogcHJvbXB0X3dpdGhfZGVmYXVsdCgi55So5oi35ZCNIiwgYXJncy51c2VyIG9yIGRlZmF1bHRzWyJ1c2VyIl0pLAogICAgICAgICAgICAicGFzc3dvcmQiOiBwcm9tcHRfd2l0aF9kZWZhdWx0KCLlr4bnoIEiLCBhcmdzLnBhc3N3b3JkIG9yICIiLCBoaWRlPVRydWUpLAogICAgICAgICAgICAiZGF0YWJhc2UiOiBwcm9tcHRfd2l0aF9kZWZhdWx0KCLmlbDmja7lupMiLCBhcmdzLmRhdGFiYXNlIG9yIGRlZmF1bHRzWyJkYXRhYmFzZSJdKSwKICAgICAgICAgICAgInRhYmxlIjogcHJvbXB0X3dpdGhfZGVmYXVsdCgi6KGo5ZCNIiwgYXJncy50YWJsZSBvciBkZWZhdWx0c1sidGFibGUiXSksCiAgICAgICAgICAgICJjaGFyc2V0IjogInV0ZjhtYjQiLAogICAgICAgIH0KCiAgICBpZiBub3QgY29uZmlnWyJwYXNzd29yZCJdOgogICAgICAgIHByaW50KCJFUlJPUjog5a+G56CB5LiN6IO95Li656m6IiwgZmlsZT1zeXMuc3RkZXJyKQogICAgICAgIHN5cy5leGl0KDEpCgogICAgd2l0aCBvcGVuKGNmZ19wYXRoLCAidyIsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIGY6CiAgICAgICAganNvbi5kdW1wKGNvbmZpZywgZiwgZW5zdXJlX2FzY2lpPUZhbHNlLCBpbmRlbnQ9MikKCiAgICBwcmludChmIlxu4pyFIOmFjee9ruaWh+S7tuW3sueUn+aIkDoge2NmZ19wYXRofSIpCiAgICBwcmludCgiICAg5ZCO57ut5Y+v55u05o6l6L+Q6KGMOiBweXRob24gc3luY190b19teXNxbC5weSAtLWJpei1saW5lIOaViOi0tyIpCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIG1haW4oKQo=
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+初始化 MySQL 本地配置文件（单业务线）
+
+此脚本不打包任何真实凭据，安装专家包后由测试人员在自己电脑上运行一次，
+生成本机专用的 mysql_config.json，供后续 sync_to_mysql.py 定时同步使用。
+
+用法:
+  python init_mysql_config.py --biz-line 效贷
+  python init_mysql_config.py --biz-line 效贷 --password "xxx" --no-interactive
+"""
+
+import argparse
+import json
+import os
+import sys
+
+HOME = os.path.expanduser("~")
+
+# 效贷业务线默认数据库配置（仅默认连接信息，密码绝不写入任何文件）
+DEFAULT_DB_CONFIG = {
+    "效贷": {
+        "host": "172.20.148.36",
+        "port": 3306,
+        "user": "root",
+        "database": "auto_efficiency_platform_dev",
+        "table": "agent_time_tracking",
+    }
+}
+
+
+def get_data_dir(biz_line):
+    return os.path.join(HOME, ".workbuddy", "data", "time-tracking", biz_line)
+
+
+def prompt_with_default(label, default, hide=False):
+    """交互式提示，带默认值；hide=True 时不回显输入"""
+    if hide:
+        try:
+            import getpass
+            value = getpass.getpass(f"{label} [{default}]: ").strip()
+        except Exception:
+            value = input(f"{label} [{default}]: ").strip()
+    else:
+        value = input(f"{label} [{default}]: ").strip()
+    return value if value else default
+
+
+def main():
+    parser = argparse.ArgumentParser(description="初始化 MySQL 本地配置文件")
+    parser.add_argument("--biz-line", default="效贷", help="业务线（默认：效贷）")
+    parser.add_argument("--host", help="MySQL 主机")
+    parser.add_argument("--port", type=int, help="MySQL 端口")
+    parser.add_argument("--user", help="MySQL 用户名")
+    parser.add_argument("--password", default=None, help="MySQL 密码（命令行直接传不安全，仅 CI/自动化场景使用）")
+    parser.add_argument("--database", help="数据库名")
+    parser.add_argument("--table", help="表名")
+    parser.add_argument("--no-interactive", action="store_true", help="非交互模式，必须命令行传齐所有参数")
+    parser.add_argument("--force", action="store_true", help="覆盖已存在的配置文件")
+    args = parser.parse_args()
+
+    biz_line = args.biz_line
+    defaults = DEFAULT_DB_CONFIG.get(biz_line, {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "root",
+        "database": "your_database",
+        "table": "agent_time_tracking",
+    })
+
+    data_dir = get_data_dir(biz_line)
+    os.makedirs(data_dir, exist_ok=True)
+    cfg_path = os.path.join(data_dir, "mysql_config.json")
+
+    if os.path.exists(cfg_path) and not args.force:
+        print(f"⚠️  配置文件已存在: {cfg_path}", file=sys.stderr)
+        print("   如需重新生成，请删除该文件或加 --force 参数覆盖。", file=sys.stderr)
+        sys.exit(1)
+
+    if args.no_interactive:
+        if not args.password:
+            print("ERROR: --no-interactive 模式下必须提供 --password", file=sys.stderr)
+            sys.exit(1)
+        config = {
+            "host": args.host or defaults["host"],
+            "port": args.port or defaults["port"],
+            "user": args.user or defaults["user"],
+            "password": args.password,
+            "database": args.database or defaults["database"],
+            "table": args.table or defaults["table"],
+            "charset": "utf8mb4",
+        }
+    else:
+        print("=" * 60)
+        print(f"初始化 {biz_line} 业务线 MySQL 本地配置")
+        print("=" * 60)
+        print(f"配置文件将保存到: {cfg_path}")
+        print("提示：密码仅保存在本机，不会随专家包上传或分发。\n")
+
+        config = {
+            "host": prompt_with_default("主机", args.host or defaults["host"]),
+            "port": int(prompt_with_default("端口", str(args.port or defaults["port"]))),
+            "user": prompt_with_default("用户名", args.user or defaults["user"]),
+            "password": prompt_with_default("密码", args.password or "", hide=True),
+            "database": prompt_with_default("数据库", args.database or defaults["database"]),
+            "table": prompt_with_default("表名", args.table or defaults["table"]),
+            "charset": "utf8mb4",
+        }
+
+    if not config["password"]:
+        print("ERROR: 密码不能为空", file=sys.stderr)
+        sys.exit(1)
+
+    with open(cfg_path, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
+    print(f"\n✅ 配置文件已生成: {cfg_path}")
+    print("   后续可直接运行: python sync_to_mysql.py --biz-line 效贷")
+
+
+if __name__ == "__main__":
+    main()
