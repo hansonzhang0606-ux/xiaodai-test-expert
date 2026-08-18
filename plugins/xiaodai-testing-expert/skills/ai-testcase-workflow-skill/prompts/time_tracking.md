@@ -40,6 +40,29 @@
 > - 管理员通过修改 `config/team_roster.yaml` 控制访问权限
 
 > 身份确认后，整个会话的所有时间记录自动使用该姓名，无需重复输入。
+>
+> **v1.5.1 新增：MySQL 配置自动初始化检查**：
+> 1. 若 `config/time_tracking_config.yaml` 中 `storage_mode="mysql"`，AI 必须检查本机 `~/.workbuddy/data/time-tracking/效贷/mysql_config.json` 是否存在。
+> 2. **已存在** → 继续服务，不打扰用户。
+> 3. **不存在** → 向用户说明：
+>    ```
+>    检测到本机尚未初始化 MySQL 配置，后续工时数据无法同步到团队共享数据库。
+>    请输入 MySQL 密码（由管理员单独提供），我会自动完成初始化。
+>    ```
+> 4. 用户输入密码后，AI 自动调用：
+>    ```bash
+>    python scripts/init_mysql_config.py \
+>      --biz-line 效贷 \
+>      --password "{用户输入的密码}" \
+>      --employee "{已验证的员工姓名}" \
+>      --no-interactive \
+>      --quiet
+>    ```
+> 5. 解析脚本输出的 JSON：
+>    - `status=ok` → 提示"MySQL 配置初始化成功"，继续服务
+>    - `status=skipped` → 继续服务
+>    - `status=error` → 提示错误，可建议用户手动运行 `python scripts/init_mysql_config.py --biz-line 效贷`
+> 6. **禁止要求用户手动打开 CMD 执行命令**，AI 必须在对话中自动完成调用与错误处理。
 
 ---
 
@@ -353,15 +376,21 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 
 1. 确认 MySQL 服务端已建库建表：表 `agent_time_tracking`，唯一键 `record_key`（MD5(biz_line_code|employee|user_story|step_code|timestamp秒)）
 2. 将数据库连接信息（host/port/database/账号/密码）告知各测试人员（密码不要写入专家包或 Git）
-3. 通知所有测试人员在本机运行：
+3. **v1.5.1 起，AI 在会话启动身份验证后自动检测本机配置**：
+   - 若 `~/.workbuddy/data/time-tracking/效贷/mysql_config.json` 不存在，AI 会自动询问密码并调用：
+     ```bash
+     python scripts/init_mysql_config.py --biz-line 效贷 --password "{密码}" --employee "{姓名}" --no-interactive --quiet
+     ```
+   - 若已存在，则安全跳过。
+4. 测试人员无需手动打开 CMD；如自动初始化失败，可降级手动运行：
    ```bash
    python scripts/init_mysql_config.py --biz-line 效贷
    ```
-   按提示输入连接信息，生成本机 `~/.workbuddy/data/time-tracking/效贷/mysql_config.json`
-4. 将 `config/time_tracking_config.yaml` 的 `storage_mode` 改为 `"mysql"`
-5. 配置定时同步任务（每日 12:00/18:00 调用 `scripts/sync_to_mysql.py`，Windows 用 schtasks / .bat）
+5. 将 `config/time_tracking_config.yaml` 的 `storage_mode` 改为 `"mysql"`
+6. 配置定时同步任务（每日 12:00/18:00 调用 `scripts/sync_to_mysql.py`，Windows 用 schtasks / .bat）
 
 > 初始化指令：用户说"初始化时间追踪数据库"或"初始化 MySQL"时触发此流程。
+> **多业务线说明**：`init_mysql_config.py` 已内置效贷/泾渭云/小贷/智慧记零售等业务线映射，传入 `--biz-line {业务线}` 即可自动生成对应目录（如 `time-tracking/泾渭云/mysql_config.json`），biz_line_code 自动映射。
 
 ---
 
