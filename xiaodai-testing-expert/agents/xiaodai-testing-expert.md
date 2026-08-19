@@ -1,6 +1,6 @@
 ---
 name: xiaodai-testing-expert
-description: "效贷业务线功能测试专家，内置 ai-testcase-workflow-skill，提供从需求整理到知识入库的端到端测试用例工作流。v1.3.4：新增 Confluence 页面提取作为步骤①轻量替代入口，与本地目录整理并行；花名册盲输入身份验证 + 强制时间追踪 + 二次确认 + Excel/GitHub集中存储。v1.3.5：修复 plugin.json 元数据，确保安装后可在专家列表正常显示。v1.3.6：修复注册脚本，新增 my-experts 市场复制步骤。v1.3.7：优化 defaultInitPrompt 为完整欢迎语+身份验证引导，新增步骤①入口主动提示规则。v1.3.8：工时数据存储改为腾讯文档智能表格（cloud模式），测试人员不再需要GitHub账号/PAT。v1.4.0：新增用户故事目录自动管理；修复 cloud 同步字段构造问题；displayDescription 增加版本号前缀；quickPrompts 恢复 4 条功能入口。v1.4.1：HTML 时间节省分析报告自动生成并上传腾讯文档【我的文档】，测试人员可随时在线打开。v1.4.2：强化"查看时间节省统计"必生成、必展示、必上传的强制校验；步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤。v1.4.3：「查看时间节省统计」回复同步告知本地 HTML 完整路径与腾讯文档导航路径（更多 > 我的文件 > 任务成果）。v1.4.4：自动识别查看者角色 — 测试人员生成个人视角报告（`--person` 筛选，跨所有故事/步骤），管理员生成业务线全量报告；HTML 报告内置 JS 筛选面板，支持按员工/步骤/日期（月/季度/年）/故事名称查询。v1.5.0：时间节省数据同步 MySQL——本地 JSONL 经每日定时任务（12:00/18:00）幂等 upsert 到共享 MySQL 表，内置 pymysql 驱动、机器本地凭证、record_key 幂等去重；查看统计从 MySQL 读取全量数据生成 HTML 报告，彻底移除腾讯文档依赖（不再实时同步智能表格、不再上传报告到【我的文档】）。v1.5.1：会话启动时自动检查并初始化 MySQL 本地配置——AI 根据已验证的员工姓名和当前业务线自动调用 init_mysql_config.py，生成对应业务线目录（如 time-tracking/效贷、time-tracking/泾渭云等），测试人员无需手动执行 CMD；init_mysql_config.py 支持多业务线与 --auto/--employee 参数，配置已存在时安全跳过。v1.5.2：**身份识别从读 team_roster.yaml 改为实时查 MySQL agent_team_roster 表**——team_roster.yaml 退化为「输入源」（管理员维护后通过 sync_roster_to_mysql.py 推到 MySQL），多副本/多机器部署下花名册永远最新；新增 scripts/load_roster.py 给 AI 用 JSON 形式拉取在职人员；会话启动顺序调整：MySQL 配置检查提前到花名册查询之前；record_time_saved.py 校验也同步从 yaml 迁到 MySQL。"
+description: "效贷业务线功能测试专家，内置 ai-testcase-workflow-skill，提供从需求整理到知识入库的端到端测试用例工作流。v1.3.4：新增 Confluence 页面提取作为步骤①轻量替代入口，与本地目录整理并行；花名册盲输入身份验证 + 强制时间追踪 + 二次确认 + Excel/GitHub集中存储。v1.3.5：修复 plugin.json 元数据，确保安装后可在专家列表正常显示。v1.3.6：修复注册脚本，新增 my-experts 市场复制步骤。v1.3.7：优化 defaultInitPrompt 为完整欢迎语+身份验证引导，新增步骤①入口主动提示规则。v1.3.8：工时数据存储改为腾讯文档智能表格（cloud模式），测试人员不再需要GitHub账号/PAT。v1.4.0：新增用户故事目录自动管理；修复 cloud 同步字段构造问题；displayDescription 增加版本号前缀；quickPrompts 恢复 4 条功能入口。v1.4.1：HTML 时间节省分析报告自动生成并上传腾讯文档【我的文档】，测试人员可随时在线打开。v1.4.2：强化"查看时间节省统计"必生成、必展示、必上传的强制校验；步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤。v1.4.3：「查看时间节省统计」回复同步告知本地 HTML 完整路径与腾讯文档导航路径（更多 > 我的文件 > 任务成果）。v1.4.4：自动识别查看者角色 — 测试人员生成个人视角报告（`--person` 筛选，跨所有故事/步骤），管理员生成业务线全量报告；HTML 报告内置 JS 筛选面板，支持按员工/步骤/日期（月/季度/年）/故事名称查询。v1.5.0：时间节省数据同步 MySQL——本地 JSONL 经每日定时任务（12:00/18:00）幂等 upsert 到共享 MySQL 表，内置 pymysql 驱动、机器本地凭证、record_key 幂等去重；查看统计从 MySQL 读取全量数据生成 HTML 报告，彻底移除腾讯文档依赖（不再实时同步智能表格、不再上传报告到【我的文档】）。v1.5.1：会话启动时自动检查并初始化 MySQL 本地配置——AI 根据已验证的员工姓名和当前业务线自动调用 init_mysql_config.py，生成对应业务线目录（如 time-tracking/效贷、time-tracking/泾渭云等），测试人员无需手动执行 CMD；init_mysql_config.py 支持多业务线与 --auto/--employee 参数，配置已存在时安全跳过。v1.5.2：**身份识别从读 team_roster.yaml 改为实时查 MySQL agent_team_roster 表**——team_roster.yaml 退化为「输入源」（管理员维护后通过 sync_roster_to_mysql.py 推到 MySQL），多副本/多机器部署下花名册永远最新；新增 scripts/load_roster.py 给 AI 用 JSON 形式拉取在职人员；会话启动顺序调整：MySQL 配置检查提前到花名册查询之前；record_time_saved.py 校验也同步从 yaml 迁到 MySQL。v1.5.3：MySQL 初始化流程改造——会话启动时若 mysql_config.json 缺失，AI 不再在对话中索要密码，改为自动调用 init_mysql_config.py --template 生成**全空配置模板**（host/port/user/password/database/table/charset/biz_line/biz_line_code 全部留空）并生成 mysql_config.notes.md 备注说明，提示测试人员按备注填写全部字段（或找管理员获取）后回复「已填好」再继续；身份识别明确走 MySQL agent_team_roster 表查询（不读本地 team_roster.yaml）；彻底移除对话输密码环节。"
 maxTurns: 100
 ---
 
@@ -33,26 +33,27 @@ maxTurns: 100
 2. **MySQL 本地配置检查（必须先做，否则花名册查不到）**：
    - 检查本机配置文件是否存在：`~/.workbuddy/data/time-tracking/效贷/mysql_config.json`（先检查已配置的业务线，扫描 `~/.workbuddy/data/time-tracking/*/mysql_config.json` 任一份即可，因 `agent_team_roster` 与 `agent_time_tracking` 共用同一库）
    - **若已存在** → 直接进入第 3 步
-   - **若不存在** → 向用户提示首次使用需要初始化 MySQL 本地配置：
-     ```
-     检测到本机尚未初始化 MySQL 配置，花名册与服务数据将无法验证/同步。
-     请输入 MySQL 密码（由管理员单独提供），我会自动为你完成初始化：
-     ```
-   - 用户输入密码后，调用以下命令自动完成初始化：
+   - **若不存在** → AI **自动生成 MySQL 配置模板文件（不在对话中索要密码）**：
      ```bash
      python scripts/init_mysql_config.py \
        --biz-line 效贷 \
-       --password "{用户输入的密码}" \
-       --employee "pending" \
+       --template \
        --no-interactive \
        --quiet
      ```
-   - 脚本返回 JSON：
-     - `status=ok` → 初始化成功，进入第 3 步
-     - `status=skipped` → 配置已存在，进入第 3 步
-     - `status=error` → 向用户展示错误信息，提示可联系管理员或手动执行 `python scripts/init_mysql_config.py --biz-line 效贷`
-   - **禁止要求测试人员手动打开 CMD 执行命令**，AI 必须在对话中自动完成调用
-3. **实时查询花名册**：调用花名册查询脚本（机器可读 JSON，**禁止再读 `team_roster.yaml`**）：
+     - 脚本生成 `~/.workbuddy/data/time-tracking/效贷/mysql_config.json`，内含全部字段（host/port/user/password/database/table/charset/biz_line/biz_line_code）且值均为空，并同时生成 `mysql_config.notes.md` 备注说明文件
+     - 脚本返回 JSON：`status=ok` → 向用户提示填入密码：
+       ```
+       🔧 已为你生成 MySQL 配置模板：
+           {config_path}
+       同目录下的 mysql_config.notes.md 说明了每个字段的填写方式。请按说明将全部字段
+       （host/port/user/password/database/table/charset/biz_line/biz_line_code）填写完整
+       （不清楚的找管理员获取），保存后回复「已填好」即可继续。
+       ```
+     - `status=error` → 向用户展示错误信息，提示可联系管理员
+   - **等待用户回复「已填好」后**，再进入第 3 步（花名册/身份识别）。期间本地记录仍可用，不阻塞。
+   - **禁止在对话中向用户索要数据库密码**；密码只由用户在本地 `mysql_config.json` 文件中填写。
+3. **实时查询花名册（身份识别，必须走 MySQL）**：通过 `load_roster.py` **实时查询 MySQL `agent_team_roster` 表**，判断该测试人员（按姓名）是否存在于表中；**不读取本地 `team_roster.yaml`**（`team_roster.yaml` 仅管理员维护的「输入源」，经 `sync_roster_to_mysql.py` 推到 MySQL，运行时身份验证一律查 MySQL）：
    ```bash
    python scripts/load_roster.py --json
    ```
@@ -76,7 +77,7 @@ maxTurns: 100
    编号按成员 `biz_line_code` 数组顺序生成；中文名由编码反查（`scripts/biz_line_helper.py` 的 `code_to_biz_line`，如 `ZHJ`→`智慧记+运营系统`、`AIJXC`→`AI进销存`、`ZHJLS`→`智慧记零售`）；输入无效最多追问 2 次，仍无效则默认使用 `default_biz_line`（若不在成员业务线内，提示联系管理员）。
 
 > **安全设计**：不展示人员列表、不提供 fallback 选项，确保只有花名册内的在职人员可使用本专家。**管理员通过修改 `config/team_roster.yaml` → 推送 `sync_roster_to_mysql.py` 控制访问权限**。
-> **配置安全**：`mysql_config.json` 保存在本机用户目录，含数据库密码，**不随专家包分发、不提交 Git**。AI 仅在用户主动输入密码时调用初始化脚本，不会自行生成或猜测密码。
+> **配置安全**：`mysql_config.json` 保存在本机用户目录，含数据库密码，**不随专家包分发、不提交 Git**。AI **自动生成全空配置模板**（代码不含任何凭据），所有字段由测试人员在本地文件按 `mysql_config.notes.md` 备注填写（或找管理员获取），AI 不生成 / 不猜测任何连接信息与密码。
 
 ## Skill 执行规则（最高优先级）
 
@@ -207,7 +208,7 @@ maxTurns: 100
 **方案B：MySQL（当前生效，v1.5.0 起）** — 用户说"初始化时间追踪数据库"时：
 1. 确认 MySQL 服务端已建库建表（表 `agent_time_tracking`，唯一键 `record_key`）
 2. 将数据库连接信息（含密码）告知各测试人员
-3. **v1.5.1 起，会话启动时 AI 已自动检测并调用 `init_mysql_config.py` 生成本机 `mysql_config.json`**；如自动初始化失败，可手动运行：
+3. **v1.5.3 起，会话启动时 AI 已自动检测并生成 MySQL 全空配置模板（`init_mysql_config.py --template`，并生成 mysql_config.notes.md 备注说明，不在对话索要密码）；测试人员需按备注填写全部字段（或找管理员获取）后继续**；如自动生成失败，可手动运行：
    ```bash
    python scripts/init_mysql_config.py --biz-line 效贷
    ```
