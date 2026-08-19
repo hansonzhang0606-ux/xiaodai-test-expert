@@ -18,6 +18,9 @@
 
   # 自动检测模式（AI 会话启动时调用）：配置已存在则跳过，不存在则按默认生成
   python init_mysql_config.py --biz-line 效贷 --auto --password "xxx" --no-interactive
+  # 模板模式（v1.5.3，AI 自动生成全空配置模板并生成 mysql_config.notes.md 备注说明，
+  # 测试人员按备注填全部字段或找管理员获取，不在对话中索要密码）：
+  python init_mysql_config.py --biz-line 效贷 --template --no-interactive --quiet
 """
 
 import argparse
@@ -107,6 +110,29 @@ def print_machine_result(status, message, cfg_path="", biz_line=""):
     print(json.dumps(result, ensure_ascii=False))
 
 
+def build_config_notes(biz_line):
+    """生成 mysql_config.notes.md 内容：逐字段说明取值来源，测试人员按此填写或找管理员获取。"""
+    return f"""# MySQL 配置填写说明（mysql_config.json）
+
+本文件由 AI 自动生成，所有字段初始为空。请按下方说明逐条填写，
+不清楚的字段**找管理员获取**（不要自己猜，也不要发到群里 / 提交 Git）。
+填写完成后，回到对话回复「已填好」即可继续。
+
+| 字段 | 含义 | 填写说明 / 获取方式 |
+|------|------|--------------------|
+| host | MySQL 服务器地址 | 找管理员获取（如 172.20.148.36） |
+| port | 端口 | 通常 3306 |
+| user | 用户名 | 找管理员获取（如 root） |
+| password | 密码 | 管理员单独告知，**仅填在本机文件，不要外传** |
+| database | 数据库名 | 找管理员获取（如 auto_efficiency_platform_dev） |
+| table | 表名 | 时间记录表：agent_time_tracking；花名册表：agent_team_roster |
+| charset | 字符集 | 填 utf8mb4 |
+| biz_line | 业务线中文名 | 如 效贷 / 智慧记+运营系统 / AI进销存 / 智慧记零售 |
+| biz_line_code | 业务线编码 | 如 XD / ZHJ / AIJXC / ZHJLS（与 biz_line 对应，找管理员确认） |
+
+> 当前业务线：{biz_line}。agent_team_roster 与 agent_time_tracking 共用同一库，连接信息相同。
+"""
+
 def main():
     parser = argparse.ArgumentParser(description="初始化 MySQL 本地配置文件（多业务线通用）")
     parser.add_argument("--biz-line", default="效贷", help="业务线（默认：效贷）")
@@ -122,6 +148,7 @@ def main():
     parser.add_argument("--auto", action="store_true",
                         help="自动模式：配置已存在则直接跳过（退出码0），不存在则生成")
     parser.add_argument("--force", action="store_true", help="覆盖已存在的配置文件")
+    parser.add_argument("--template", action="store_true", help="生成配置模板：全部字段留空（host/port/user/password/database/table/charset/biz_line/biz_line_code 均为空）并生成 mysql_config.notes.md 备注说明；测试人员按备注填或找管理员获取（AI 自动生成，不在对话中索要密码，代码不含任何凭据）")
     parser.add_argument("--quiet", action="store_true", help="静默模式，只输出机器可读 JSON")
     args = parser.parse_args()
 
@@ -146,6 +173,30 @@ def main():
         else:
             print(f"⚠️  {msg}", file=sys.stderr)
         return 0  # 退出码 0，避免 AI 调用时误判为失败
+
+    # 模板模式（v1.5.3）：生成全空配置模板 + 备注说明文件，AI 自动调用，不在对话中索要密码
+    if args.template:
+        config = {
+            "host": "",
+            "port": "",
+            "user": "",
+            "password": "",
+            "database": "",
+            "table": "",
+            "charset": "",
+            "biz_line": "",
+            "biz_line_code": "",
+        }
+        write_config(cfg_path, config)
+        notes_path = os.path.join(os.path.dirname(cfg_path), "mysql_config.notes.md")
+        with open(notes_path, "w", encoding="utf-8") as nf:
+            nf.write(build_config_notes(biz_line))
+        msg = f"配置模板已生成(请按 mysql_config.notes.md 备注填写全部字段): {cfg_path}"
+        if args.quiet:
+            print_machine_result("ok", msg, cfg_path=cfg_path, biz_line=biz_line)
+        else:
+            print(f"✅ {msg}")
+        return 0
 
     # 构造配置
     config = build_config(args, DEFAULT_DB_CONFIG)
