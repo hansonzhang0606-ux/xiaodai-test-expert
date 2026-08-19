@@ -16,8 +16,10 @@
 > - 会话启动时**检查 MySQL 初始化状态**：`mysql_config.json` 缺失时引导测试人员初始化
 >   （一次性操作），未初始化期间数据仅存本地、不同步数据库。
 > - **v1.5.1 变更**：MySQL 初始化由「引导手动 CMD」升级为 **AI 自动完成** —— AI 检测到
->   `mysql_config.json` 缺失时，向用户索要密码后**自动调用 `init_mysql_config.py`
->   （`--auto` + 机器可读 JSON 输出，配置已存在自动跳过）**，测试人员无需手动开 CMD。
+>   `mysql_config.json` 缺失时自动生成配置模板（不在对话中索要密码）。
+> - **v1.5.3 变更**：初始化流程改为 **AI 自动生成配置模板**（`init_mysql_config.py --template`）：
+>   脚本写出全部预设字段（host/port/user/database/table/charset/biz_line/biz_line_code），仅 `password` 留空；
+>   AI 告知测试人员配置文件路径，由其在本地文件填入密码并回复「已填好」后继续。彻底移除对话输密码环节。
 > - **v1.5.2 变更**：**身份识别从「读取 `config/team_roster.yaml`」改为「实时查询 MySQL
 >   `agent_team_roster` 表」**。`team_roster.yaml` 退化为「输入源」，管理员维护后通过
 >   `sync_roster_to_mysql.py` 推到 MySQL；新增 `scripts/load_roster.py`（`--json` 输出
@@ -101,34 +103,49 @@
 
 1. 扫描 `~/.workbuddy/data/time-tracking/*/mysql_config.json` 是否存在（任意业务线有一份即可，因 `agent_team_roster` 与 `agent_time_tracking` 共用同一库）
 2. **已存在** → 直接进入身份识别（§1.1）
-3. **不存在** → 向用户说明并索要密码（**不阻塞服务**，本地记录始终可用）：
-
-   ```
-   🔧 检测到本机尚未初始化 MySQL 配置，后续花名册与服务数据将无法验证/同步。
-      请输入 MySQL 密码（由管理员单独提供），我会自动为你完成初始化。
-   ```
-
-4. 用户输入密码后，**AI 自动调用**初始化脚本：
+3. **不存在** → AI **自动生成 MySQL 配置模板文件（不在对话中索要密码）**：
 
    ```bash
    python scripts/init_mysql_config.py \
-     --biz-line "效贷" \
-     --password "{用户输入的密码}" \
+     --biz-line "{biz_line}" \
+     --template \
+     --no-interactive \
+     --quiet
+   ```
+
+   - 脚本生成 `~/.workbuddy/data/time-tracking/{biz_line}/mysql_config.json`，内含全部预设字段（host/port/user/database/table/charset/biz_line/biz_line_code 已填好），仅 `password` 字段留空
+   - 脚本返回 JSON：`status=ok` → 向用户提示填入密码：
+
+     ```
+     🔧 已为你生成 MySQL 配置模板：
+         {config_path}
+     请打开该文件，在 "password" 字段填入管理员提供的数据库密码（其余字段已为你填好），保存后回复「已填好」即可继续。
+     ```
+
+   - `status=error` → 向用户展示错误信息，提示可联系管理员
+
+4. **AI 自动调用**初始化脚本生成配置模板：
+
+   ```bash
+   python scripts/init_mysql_config.py \
+     --biz-line "{biz_line}" \
+     --template \
      --employee "pending" \
      --no-interactive \
      --quiet
    ```
 
 5. **解析脚本输出的 JSON**（`--quiet` 模式输出机器可读结果）：
-   - `status=ok` → 提示"MySQL 配置初始化成功"，进入身份识别
+   - `status=ok` → 提示用户在配置模板的 `password` 字段填入密码、回复「已填好」后进入身份识别
    - `status=skipped` → 配置已存在，进入身份识别
-   - `status=error` → 向用户展示错误信息，提示可联系管理员，或建议手动执行 `python scripts/init_mysql_config.py --biz-line "{biz_line}"`
+   - `status=error` → 向用户展示错误信息，提示可联系管理员
 
-6. **禁止要求测试人员手动打开 CMD 执行命令**，AI 必须在对话中自动完成调用与错误处理。
+6. **禁止要求测试人员手动打开 CMD 执行命令**，AI 必须在对话中自动完成调用与错误处理；**禁止在对话中向用户索要数据库密码**，密码只由用户在本地 `mysql_config.json` 文件中填写。
 
 > **说明**：`mysql_config.json` 是本机私有配置（**含数据库密码**），**不会随 Skill 分发**，
 > 每台电脑需初始化一次。密码由管理员单独告知，**不要发到群里、不要提交到 Git**；
-> AI 仅在用户主动输入密码时调用初始化脚本，不会自行生成或猜测密码。
+> AI **自动生成配置模板**（全部字段预设、仅 `password` 留空），**不在对话中索要密码**，
+> 由测试人员在本地文件中填入密码后回复「已填好」继续；AI 不会自行生成或猜测密码。
 
 ---
 
@@ -260,19 +277,15 @@ python scripts/record_time_saved.py \
 **记录环节只写本地，不调用任何网络接口，永不失败**。MySQL 同步由定时任务完成
 （见第六节），**AI 在记录环节不需要、也不应该直接调用 `sync_to_mysql.py`**。
 
-### 第 5 步：确认记录 + 同步状态说明
+### 第 5 步：确认记录
+
+用户确认后，只给出关键信息，不要解释调用脚本、存储文件、同步机制等技术细节：
 
 ```
-✅ 已记录：{员工} 在 {用户故事} 的 {步骤名称} 环节节省了 {hours} 小时（{person_days} 人天）。
-   📍 数据已保存到本机（records.jsonl）。
-
-   同步说明：
-   - 每日 12:00 / 18:00 定时任务会自动将本机记录同步到团队共享数据库（若已配置定时任务）
-   - 管理员可随时说"同步到数据库"或"同步时间数据"触发立即同步
-   - 若本机尚未初始化 MySQL 配置，数据会一直保存在本地，不会丢失（见第一节第 2 点）
+✅ 已记录：{员工} / {用户故事} / {步骤名称}：节省 {person_days} 人天（{hours} 小时）。
 ```
 
-> 本环节不再有云端实时同步（v4 的 4b/4c 已移除），确认信息简洁明确。
+> 回复要求：一行结论即可，禁止追加 scripts 路径、records.jsonl、MySQL 同步说明、定时任务细节等。保持简洁。
 
 ---
 
@@ -437,7 +450,7 @@ python scripts/generate_time_analytics.py --biz-line "{biz_line}" --format csv
    C:\Users\<你的用户名>\.workbuddy\data\...\scripts\    ← 实际以 skill 安装位置为准
    ```
 
-2. 在 CMD 中运行初始化脚本（会提示输入 MySQL 密码，其余字段已默认填好，直接回车即可）：
+2. 在 CMD 中运行初始化脚本（交互模式会提示输入 MySQL 密码并写入模板；其余字段已默认填好，直接回车即可。注意：AI 自动模式不再在对话中索要密码，而是生成模板由你本地填密码）：
 
    ```bat
    cd <本 skill 的 scripts 目录>
@@ -446,7 +459,7 @@ python scripts/generate_time_analytics.py --biz-line "{biz_line}" --format csv
 
    > AI 自动模式使用的等价命令（`--auto`：已存在自动跳过；`--quiet`：输出机器可读 JSON）：
    > ```bash
-   > python scripts/init_mysql_config.py --biz-line "{biz_line}" --password "xxx" --employee "{姓名}" --no-interactive --quiet
+   > python scripts/init_mysql_config.py --biz-line "{biz_line}" --template --employee "{姓名}" --no-interactive --quiet
    > ```
 
 3. 脚本会生成本机配置文件：`C:\Users\<你的用户名>\.workbuddy\data\time-tracking\{biz_line}\mysql_config.json`
@@ -482,7 +495,7 @@ python sync_to_mysql.py --biz-line {biz_line}              :: 真实同步（看
 
 | 现象 | 处理 |
 |------|------|
-| 提示「配置文件不存在」 | **正常流程**：会话启动时 AI 会自动检测并引导初始化（索要密码 → 自动调用脚本）。若 AI 未能自动完成，手动运行一次 `python init_mysql_config.py --biz-line {biz_line}` |
+| 提示「配置文件不存在」 | **正常流程**：会话启动时 AI 会自动检测并生成配置模板（不在对话索要密码），告知路径后由测试人员在本地文件填入密码。若 AI 未能自动完成，手动运行一次 `python init_mysql_config.py --biz-line {biz_line}` |
 | **新电脑没有 mysql_config.json** | **正常现象**：该文件是本机私有配置，**不会随 Skill 分发**。在新电脑上首次使用专家时 AI 会自动引导初始化，也可手动运行上面的初始化脚本 |
 | 同步报「无法连接 MySQL」 | 检查本机网络是否能访问数据库服务器（host/port），密码是否正确（可重跑初始化脚本） |
 | 忘记数据库密码 | 联系管理员获取，密码不随 Skill 分发 |
