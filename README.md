@@ -16,9 +16,9 @@
 
 ## 专家版本
 
-- **版本**：v1.5.2
+- **版本**：v1.6.0
 - **内置 Skill**：ai-testcase-workflow-skill（7 步测试用例流水线）
-- **身份验证**：会话启动时**实时查询 MySQL `agent_team_roster` 表**做精确匹配（覆盖 7 条业务线：效贷 XD / 泾渭云 JWY / 小贷 XR / 小贷 XXD / 智慧记 ZHJ / AI 进销存 AIJXC / 智慧记零售 ZHJLS）
+- **身份验证**：会话启动时**实时查询 MySQL `agent_team_roster` 表**做精确匹配（覆盖 7 条业务线：效贷 XD / 泾渭云 JWY / 效融 XR / 小贷 XXD / 智慧记 ZHJ / AI 进销存 AIJXC / 智慧记零售 ZHJLS）
 - **MySQL 初始化**：首次使用由 AI 自动完成（`init_mysql_config.py --auto`），测试人员无需手动执行 CMD
 - **时间节省统计**：数据同步至共享 MySQL 库 `agent_time_tracking`，查看统计时生成 HTML 报告并本地展示（已移除腾讯文档依赖）
 - **文件前缀**：各步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤
@@ -56,6 +56,7 @@
 
 ## 版本历史
 
+- **v1.6.0**：专家从仅效贷扩展为 **效贷 / 小贷 / 效融** 三条业务线通用（三条业务线工作流程一致）；保留「效贷测试专家」名称并泛化开场白；首次无配置时由测试人员先选择业务线再初始化；知识库按 `biz_line` 严格隔离（各业务线独立向量库 / namespace）。
 - **v1.5.2**：身份识别从读 `team_roster.yaml` 改为实时查 MySQL `agent_team_roster`；新增 `load_roster.py` / `sync_roster_to_mysql.py`，花名册多副本始终最新。
 - **v1.5.1**：会话启动自动检查并初始化 MySQL 本地配置（AI 自动调用 `init_mysql_config.py`，测试人员无需手动 CMD）。
 - **v1.5.0**：时间节省数据同步 MySQL（本地 JSONL 经定时任务幂等 upsert 到共享表），查看统计改为从 MySQL 读取生成报告，移除腾讯文档依赖。
@@ -64,4 +65,4 @@
 ## 管理员
 
 - **仓库所有者**：hansonzhang0606-ux
-- **业务线**：效贷
+- **业务线**：效贷 / 小贷 / 效融
