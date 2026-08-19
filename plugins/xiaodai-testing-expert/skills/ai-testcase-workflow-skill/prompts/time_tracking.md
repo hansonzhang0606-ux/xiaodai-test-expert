@@ -17,9 +17,9 @@
 >   （一次性操作），未初始化期间数据仅存本地、不同步数据库。
 > - **v1.5.1 变更**：MySQL 初始化由「引导手动 CMD」升级为 **AI 自动完成** —— AI 检测到
 >   `mysql_config.json` 缺失时自动生成配置模板（不在对话中索要密码）。
-> - **v1.5.3 变更**：初始化流程改为 **AI 自动生成配置模板**（`init_mysql_config.py --template`）：
->   脚本写出全部预设字段（host/port/user/database/table/charset/biz_line/biz_line_code），仅 `password` 留空；
->   AI 告知测试人员配置文件路径，由其在本地文件填入密码并回复「已填好」后继续。彻底移除对话输密码环节。
+> - **v1.5.3 变更**：初始化流程改为 **AI 自动生成全空配置模板**（`init_mysql_config.py --template`）：
+>   脚本写出全部字段（host/port/user/password/database/table/charset/biz_line/biz_line_code）且值均为空，并同时生成 `mysql_config.notes.md` 备注说明文件；
+>   AI 告知测试人员配置文件路径与备注说明，由其在本地文件按备注填写全部字段（或找管理员获取）并回复「已填好」后继续。彻底移除对话输密码环节。
 > - **v1.5.2 变更**：**身份识别从「读取 `config/team_roster.yaml`」改为「实时查询 MySQL
 >   `agent_team_roster` 表」**。`team_roster.yaml` 退化为「输入源」，管理员维护后通过
 >   `sync_roster_to_mysql.py` 推到 MySQL；新增 `scripts/load_roster.py`（`--json` 输出
@@ -45,7 +45,7 @@
 
 每次新会话开始时，**第一步必须**（在 MySQL 配置就绪后）实时查询 MySQL 花名册并确认员工身份：
 
-1. **调用花名册查询脚本**（机器可读 JSON，**禁止再读 `team_roster.yaml`**）：
+1. **调用花名册查询脚本，实时查询 MySQL `agent_team_roster` 表**（机器可读 JSON，**禁止读本地 `team_roster.yaml`**；后者仅管理员维护的输入源，经 `sync_roster_to_mysql.py` 推到 MySQL）：
 
    ```bash
    python scripts/load_roster.py --json
@@ -113,13 +113,15 @@
      --quiet
    ```
 
-   - 脚本生成 `~/.workbuddy/data/time-tracking/{biz_line}/mysql_config.json`，内含全部预设字段（host/port/user/database/table/charset/biz_line/biz_line_code 已填好），仅 `password` 字段留空
-   - 脚本返回 JSON：`status=ok` → 向用户提示填入密码：
+   - 脚本生成 `~/.workbuddy/data/time-tracking/{biz_line}/mysql_config.json`，内含全部字段（host/port/user/password/database/table/charset/biz_line/biz_line_code）且值均为空，并同时生成 `mysql_config.notes.md` 备注说明文件
+   - 脚本返回 JSON：`status=ok` → 向用户提示按备注填写全部字段：
 
      ```
      🔧 已为你生成 MySQL 配置模板：
          {config_path}
-     请打开该文件，在 "password" 字段填入管理员提供的数据库密码（其余字段已为你填好），保存后回复「已填好」即可继续。
+     同目录 mysql_config.notes.md 说明了每个字段的填写方式。请按说明将全部字段
+     （host/port/user/password/database/table/charset/biz_line/biz_line_code）填写完整
+     （不清楚的找管理员获取），保存后回复「已填好」即可继续。
      ```
 
    - `status=error` → 向用户展示错误信息，提示可联系管理员
@@ -136,7 +138,7 @@
    ```
 
 5. **解析脚本输出的 JSON**（`--quiet` 模式输出机器可读结果）：
-   - `status=ok` → 提示用户在配置模板的 `password` 字段填入密码、回复「已填好」后进入身份识别
+   - `status=ok` → 提示用户按 `mysql_config.notes.md` 备注填写全部字段、回复「已填好」后进入身份识别
    - `status=skipped` → 配置已存在，进入身份识别
    - `status=error` → 向用户展示错误信息，提示可联系管理员
 
@@ -144,8 +146,8 @@
 
 > **说明**：`mysql_config.json` 是本机私有配置（**含数据库密码**），**不会随 Skill 分发**，
 > 每台电脑需初始化一次。密码由管理员单独告知，**不要发到群里、不要提交到 Git**；
-> AI **自动生成配置模板**（全部字段预设、仅 `password` 留空），**不在对话中索要密码**，
-> 由测试人员在本地文件中填入密码后回复「已填好」继续；AI 不会自行生成或猜测密码。
+> AI **自动生成全空配置模板**（全部字段留空，并生成 `mysql_config.notes.md` 备注说明），**不在对话中索要密码**，
+> 由测试人员在本地文件中按备注填写全部字段后回复「已填好」继续；AI 不会自行生成或猜测任何凭据。
 
 ---
 
@@ -441,7 +443,7 @@ python scripts/generate_time_analytics.py --biz-line "{biz_line}" --format csv
 
 ### 第 1 步：测试人员一次性初始化（每台电脑执行一次）
 
-> **正常情况下由 AI 自动完成**（会话启动时检测 `mysql_config.json` 缺失 → 索要密码 → 自动调用脚本）。
+> **正常情况下由 AI 自动完成**（会话启动时检测 `mysql_config.json` 缺失 → 自动生成全空配置模板及 `mysql_config.notes.md` 备注说明 → 测试人员按备注填写全部字段并回复「已填好」）。
 > 以下为手动方式，仅在 AI 无法自动完成或管理员排查时使用：
 
 1. 找到本 skill 的 scripts 目录（以你本机用户名替换 `<你的用户名>`）：
@@ -450,7 +452,7 @@ python scripts/generate_time_analytics.py --biz-line "{biz_line}" --format csv
    C:\Users\<你的用户名>\.workbuddy\data\...\scripts\    ← 实际以 skill 安装位置为准
    ```
 
-2. 在 CMD 中运行初始化脚本（交互模式会提示输入 MySQL 密码并写入模板；其余字段已默认填好，直接回车即可。注意：AI 自动模式不再在对话中索要密码，而是生成模板由你本地填密码）：
+2. 在 CMD 中运行初始化脚本（交互模式会逐项提示输入 host/port/user/password 等字段。注意：AI 自动模式不再在对话中索要密码，而是生成全空模板 + `mysql_config.notes.md` 备注说明，由你本地按备注填写全部字段）：
 
    ```bat
    cd <本 skill 的 scripts 目录>
@@ -466,7 +468,7 @@ python scripts/generate_time_analytics.py --biz-line "{biz_line}" --format csv
 
 > ⚠️ **必须完成此步骤**。如果未生成 mysql_config.json，测试人员反馈的时间数据只会保存在本机 JSONL，不会同步到团队共享 MySQL 数据库，管理员也无法在数据库中看到这些数据。
 >
-> ⚠️ `mysql_config.json` 是本机私有配置（**含数据库密码**），**不要发到群里、不要提交到 Git**。密码由管理员单独告知。
+> ⚠️ `mysql_config.json` 是本机私有配置（**含数据库密码**），**不要发到群里、不要提交到 Git**。host/port/user/database 等连接信息与密码均由管理员单独告知。
 >
 > 此步骤只需执行一次。更换电脑需重新运行。
 
@@ -495,7 +497,7 @@ python sync_to_mysql.py --biz-line {biz_line}              :: 真实同步（看
 
 | 现象 | 处理 |
 |------|------|
-| 提示「配置文件不存在」 | **正常流程**：会话启动时 AI 会自动检测并生成配置模板（不在对话索要密码），告知路径后由测试人员在本地文件填入密码。若 AI 未能自动完成，手动运行一次 `python init_mysql_config.py --biz-line {biz_line}` |
+| 提示「配置文件不存在」 | **正常流程**：会话启动时 AI 会自动检测并生成全空配置模板与 `mysql_config.notes.md` 备注说明（不在对话索要密码），告知路径及备注后由测试人员按备注在本地文件填写全部字段。若 AI 未能自动完成，手动运行一次 `python init_mysql_config.py --biz-line {biz_line}` |
 | **新电脑没有 mysql_config.json** | **正常现象**：该文件是本机私有配置，**不会随 Skill 分发**。在新电脑上首次使用专家时 AI 会自动引导初始化，也可手动运行上面的初始化脚本 |
 | 同步报「无法连接 MySQL」 | 检查本机网络是否能访问数据库服务器（host/port），密码是否正确（可重跑初始化脚本） |
 | 忘记数据库密码 | 联系管理员获取，密码不随 Skill 分发 |
