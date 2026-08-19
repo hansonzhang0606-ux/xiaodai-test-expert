@@ -1,4 +1,4 @@
-# 时间节省追踪规则（v5.2 — 强制反馈 + 二次确认 + 参考时间 + MySQL 共享数据库同步 + AI 自动初始化 + 花名册实时查 MySQL | 通用多业务线版）
+# 时间节省追踪规则（v5.3 — 强制反馈 + 二次确认 + 参考时间 + MySQL 共享数据库同步 + AI 自动初始化 + 定时任务自动注册 + 花名册实时查 MySQL | 通用多业务线版）
 
 > **本文件定义了工作流每个步骤完成后，强制收集时间节省数据的执行规则。**
 > 触发条件：会话启动时选择身份；步骤 ①②④⑥⑦ 完成后强制反馈；
@@ -15,6 +15,7 @@
 >   不再打包 `.aipage` 上传【我的文档】、不再依赖腾讯文档连接器。
 > - 会话启动时**检查 MySQL 初始化状态**：`mysql_config.json` 缺失时引导测试人员初始化
 >   （一次性操作），未初始化期间数据仅存本地、不同步数据库。
+> - **v5.3 变更**：① `sync_task.bat` 修复 Windows 兼容性（**GBK 编码 + CRLF 换行 + Python 自动探测 + `%~dp0` 定位**），解决 schtasks 触发的 cmd.exe 用 GBK(936) 读取 UTF-8/LF bat 导致中文乱码、找不到命令、路径找不到的问题；② 定时任务注册由「人工手动」升级为「AI 自动完成」——会话启动检测到未注册 → 自动 `schtasks /create` 注册早/午/晚三个每日任务。
 > - **v1.5.1 变更**：MySQL 初始化由「引导手动 CMD」升级为 **AI 自动完成** —— AI 检测到
 >   `mysql_config.json` 缺失时自动生成配置模板（不在对话中索要密码）。
 > - **v1.5.3 变更**：初始化流程改为 **AI 自动生成全空配置模板**（`init_mysql_config.py --template`）：
@@ -148,6 +149,27 @@
 > 每台电脑需初始化一次。密码由管理员单独告知，**不要发到群里、不要提交到 Git**；
 > AI **自动生成全空配置模板**（全部字段留空，并生成 `mysql_config.notes.md` 备注说明），**不在对话中索要密码**，
 > 由测试人员在本地文件中按备注填写全部字段后回复「已填好」继续；AI 不会自行生成或猜测任何凭据。
+
+### 4. 定时任务自动注册（v5.3 起 AI 自动完成）
+
+MySQL 配置就绪后，AI **自动检查并注册**本机「定时同步」计划任务（Windows 任务计划程序），
+**无需测试人员手动打开 CMD**：
+
+1. 检查是否已注册（任一时间点任务存在即可）：
+   ```bash
+   schtasks /query /tn "{biz_line}时间同步-午" 2>&1
+   ```
+2. **不存在** → AI 自动注册早/午/晚三个每日任务（`<scripts目录>` 换成实际绝对路径）：
+   ```bat
+   schtasks /create /tn "{biz_line}时间同步-早" /tr "<scripts目录>\sync_task.bat" /sc daily /st 09:00 /f
+   schtasks /create /tn "{biz_line}时间同步-午" /tr "<scripts目录>\sync_task.bat" /sc daily /st 12:00 /f
+   schtasks /create /tn "{biz_line}时间同步-晚" /tr "<scripts目录>\sync_task.bat" /sc daily /st 18:00 /f
+   ```
+3. **已存在** → 跳过，直接进入身份识别。
+4. **注册失败**（权限不足 / schtasks 被禁用）→ 提示测试人员以管理员身份运行注册命令（见 §6 第 2 步手动备选），不阻塞其余流程。
+
+> `sync_task.bat` 已内置 Python 自动探测 + 编码修复（GBK/CRLF），测试人员无需改任何配置；
+> 业务线由 bat 内 `set BIZ_LINE=` 决定（部署时已按业务线写死或需修改，见 bat 顶部注释）。
 
 ---
 
@@ -472,16 +494,21 @@ python scripts/generate_time_analytics.py --biz-line "{biz_line}" --format csv
 >
 > 此步骤只需执行一次。更换电脑需重新运行。
 
-### 第 2 步：注册定时任务（管理员统一配置或各人自配）
+### 第 2 步：注册定时任务（v5.3 起 AI 自动完成，手动方式仅作备选）
+
+> **正常情况下由 AI 自动完成**（会话启动检测到未注册 → 自动 `schtasks /create` 注册早/午/晚三任务，见 §一第 4 点）。
+> 以下为手动备选方式，仅在 AI 无法自动完成（如权限不足）或管理员排查时使用：
 
 以管理员身份打开 CMD，执行（把 `<scripts目录>` 换成实际路径，任务名可带业务线标识）：
 
 ```bat
+schtasks /create /tn "{biz_line}时间同步-早" /tr "<scripts目录>\sync_task.bat" /sc daily /st 09:00 /f
 schtasks /create /tn "{biz_line}时间同步-午" /tr "<scripts目录>\sync_task.bat" /sc daily /st 12:00 /f
 schtasks /create /tn "{biz_line}时间同步-晚" /tr "<scripts目录>\sync_task.bat" /sc daily /st 18:00 /f
 ```
 
-> `sync_task.bat` 顶部有 `set BIZ_LINE={biz_line}`，部署时确认已改成你的业务线名称。
+> `sync_task.bat` 已内置 Python 自动探测 + 编码修复（GBK/CRLF），无需改配置；
+> 业务线由 bat 内 `set BIZ_LINE=` 决定（部署时确认已改成你的业务线名称）。
 > 查看：`schtasks /query /tn "{biz_line}时间同步-午"`；删除：`schtasks /delete /tn "..." /f`。
 
 ### 第 3 步：手动同步 / 验证（可选）
