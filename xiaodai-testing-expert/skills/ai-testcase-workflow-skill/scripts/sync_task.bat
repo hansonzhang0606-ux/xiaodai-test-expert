@@ -1,21 +1,23 @@
 @echo off
 REM ============================================================
-REM æ•ˆè´·æµ‹è¯•ä¸“å®¶ - æ—¶é—´è®°å½•åŒæ­¥åˆ° MySQL
-REM ä¾èµ–ï¼šPython 3.6+ï¼ˆpymysql å·²æ‰“åŒ…è¿› scripts ç›®å½•ï¼Œæ— éœ€ pip installï¼‰
-REM å®šæ—¶ï¼šæ¯å¤© 12:00 / 18:00 å„ä¸€æ¬¡
-REM
-REM é¦–æ¬¡æ³¨å†Œè®¡åˆ’ä»»åŠ¡ï¼ˆä»¥ç®¡ç†å‘˜èº«ä»½è¿è¡Œ CMDï¼Œæ‰§è¡Œä»¥ä¸‹ä¸¤æ¡ï¼‰ï¼š
-REM   schtasks /create /tn "æ•ˆè´·æ—¶é—´åŒæ­¥-åˆ" /tr "%~dp0sync_task.bat" /sc daily /st 12:00 /f
-REM   schtasks /create /tn "æ•ˆè´·æ—¶é—´åŒæ­¥-æ™š" /tr "%~dp0sync_task.bat" /sc daily /st 18:00 /f
-REM
-REM æŸ¥çœ‹ï¼š   schtasks /query /tn "æ•ˆè´·æ—¶é—´åŒæ­¥-åˆ"
-REM åˆ é™¤ï¼š   schtasks /delete /tn "æ•ˆè´·æ—¶é—´åŒæ­¥-åˆ" /f & schtasks /delete /tn "æ•ˆè´·æ—¶é—´åŒæ­¥-æ™š" /f
+REM Ð§´û²âÊÔ×¨¼Ò - Ê±¼ä¼ÇÂ¼Í¬²½µ½ MySQL
+REM ±¾ÎÄ¼þ±ØÐë GBK ±àÂë + CRLF »»ÐÐ£¨schtasks µÄ cmd.exe ÓÃ 936 ¶ÁÈ¡£©
+REM ¶¨Ê±£ºÃ¿Ìì 9:00 / 12:00 / 18:00 ¸÷Ò»´Î£¨AI ³õÊ¼»¯Ê±×Ô¶¯×¢²á£©
 REM ============================================================
-
-REM åˆ‡æ¢åˆ°è„šæœ¬ç›®å½•ï¼ˆç¡®ä¿åŠ è½½åŒç›®å½•æ‰“åŒ…çš„ pymysqlï¼‰
+set BIZ_LINE=Ð§´û
+set PYTHONIOENCODING=utf-8
 cd /d "%~dp0"
 
-REM è¿è¡ŒåŒæ­¥ï¼Œæ—¥å¿—è¿½åŠ åˆ°æœ¬åœ°
-python sync_to_mysql.py --biz-line æ•ˆè´· >> "%~dp0sync_log.txt" 2>&1
+REM Ì½²â Python£¨ÓÅÏÈ python ÃüÁî£¬Ê§°ÜÊÔ³£¼û¾ø¶ÔÂ·¾¶£©
+set "PY_CMD="
+where python >nul 2>&1 && set "PY_CMD=python"
+if not defined PY_CMD if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+if not defined PY_CMD if exist "%LOCALAPPDATA%\Programs\Python\Python313\python.exe" set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
+if not defined PY_CMD (
+  echo ERROR: Î´ÕÒµ½ Python£¬Çë°²×° Python 3.6+ ²¢¼ÓÈë PATH >> "%~dp0sync_log.txt" 2>&1
+  exit /b 9009
+)
 
+REM ÔËÐÐÍ¬²½£¬ÈÕÖ¾×·¼Óµ½±¾µØ
+"%PY_CMD%" sync_to_mysql.py --biz-line %BIZ_LINE% >> "%~dp0sync_log.txt" 2>&1
 exit /b %ERRORLEVEL%
