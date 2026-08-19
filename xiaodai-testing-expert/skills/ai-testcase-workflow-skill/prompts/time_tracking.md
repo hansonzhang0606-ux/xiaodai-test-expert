@@ -1,68 +1,134 @@
-# 时间节省追踪规则（v5 — 强制反馈 + 二次确认 + 参考时间 + MySQL 定时同步）
+# 时间节省追踪规则（v5.2 — 强制反馈 + 二次确认 + 参考时间 + MySQL 共享数据库同步 + AI 自动初始化 + 花名册实时查 MySQL | 通用多业务线版）
 
 > **本文件定义了工作流每个步骤完成后，强制收集时间节省数据的执行规则。**
 > 触发条件：会话启动时选择身份；步骤 ①②④⑥⑦ 完成后强制反馈；
 > 用户说"查看时间统计"时生成分析报告。
 >
-> **v5 变更**：存储方式由腾讯文档智能表格改为共享 MySQL（v1.5.0 起）。用户确认后数据**立即写入本地 JSONL**（零网络依赖、兜底），由**定时任务（每日 12:00/18:00）幂等 upsert** 同步到共享 MySQL 表 `agent_time_tracking`，AI 无需实时调用云 API。查看统计时**从 MySQL 读取全量数据**生成 HTML 报告，报告**仅本地展示**（不再上传腾讯文档【我的文档】）。
-> **v4 变更**：cloud 模式下，用户确认后**立即**调用腾讯文档 MCP `mcp__tencent-docs__smartsheet.add_records` 追加一行到智能表格，实现实时同步（非定时批量）。**（v5 起已废弃）**
-> **v4.1 变更**：查看统计生成的 HTML 报告自动打包为 `.aipage` 并导入腾讯文档【我的文档】，方便测试人员随时在线打开。**（v5 起已废弃）**
-> **v4.2 变更**：查看统计时，根据身份自动区分报告范围 — 测试人员生成**个人视角报告**（`--person "{姓名}"`，历史累计所有故事/所有步骤），管理员生成**业务线全量报告**。HTML 报告内置 JS 筛选面板，支持按员工/步骤/日期维度（月/季度/年）/用户故事名称灵活查询。
+> **业务线规则**：本 skill 支持多业务线。业务线名称统一从 `config/time_tracking_config.yaml`
+> 的 `default_biz_line` 读取（下文以 `{biz_line}` 表示）；若员工在花名册中属于多条业务线，
+> 以身份确认环节员工选择的业务线为准。
+>
+> **v5 变更（MySQL-only，移除腾讯文档依赖）**：
+> - 时间数据**只写本地 JSONL**（零网络依赖、永不失败），再由**定时任务（每日 12:00 / 18:00）**
+>   幂等同步到团队共享 **MySQL 数据库**，取代 v1.4.x 的腾讯文档智能表格实时同步。
+> - **彻底移除腾讯文档 cloud 流程**：不再调用 `mcp__tencent-docs__smartsheet.*`、
+>   不再打包 `.aipage` 上传【我的文档】、不再依赖腾讯文档连接器。
+> - 会话启动时**检查 MySQL 初始化状态**：`mysql_config.json` 缺失时引导测试人员初始化
+>   （一次性操作），未初始化期间数据仅存本地、不同步数据库。
+> - **v1.5.1 变更**：MySQL 初始化由「引导手动 CMD」升级为 **AI 自动完成** —— AI 检测到
+>   `mysql_config.json` 缺失时，向用户索要密码后**自动调用 `init_mysql_config.py`
+>   （`--auto` + 机器可读 JSON 输出，配置已存在自动跳过）**，测试人员无需手动开 CMD。
+> - **v1.5.2 变更**：**身份识别从「读取 `config/team_roster.yaml`」改为「实时查询 MySQL
+>   `agent_team_roster` 表」**。`team_roster.yaml` 退化为「输入源」，管理员维护后通过
+>   `sync_roster_to_mysql.py` 推到 MySQL；新增 `scripts/load_roster.py`（`--json` 输出
+>   机器可读结果），AI 会话启动直接调用。会话启动顺序调整：MySQL 配置检查（§3）提前到
+>   身份识别（§2）之前——先有连接再查花名册。`record_time_saved.py` 校验也同步从 yaml 迁到 MySQL。
+> - 查看统计时**从本地 JSONL 读取**（最完整、最实时），生成 HTML 报告并展示
+>   （展示方式随宿主环境：WorkBuddy 用 `present_files`，IDE 环境给出文件路径，见第五节）。
 
 ---
 
-## 一、会话启动：身份识别（必做）
+## 一、会话启动：身份识别（必做）+ MySQL 初始化状态检查
 
-每次新会话开始时，**第一步必须**读取花名册并确认员工身份：
+> **v1.5.2 关键变更**：身份识别从「读取 `config/team_roster.yaml`」改为
+> **「实时查询 MySQL `agent_team_roster` 表」**。`team_roster.yaml` 退化为
+> 「输入源」（管理员维护 → `sync_roster_to_mysql.py` 推到 MySQL），运行时身份验证一律查 MySQL。
+> MySQL 配置检查因此必须提前到花名册查询之前（先有连接再查花名册）。
 
-1. 读取 `config/team_roster.yaml` 获取效贷业务线在职人员列表（`active: true` 的成员）
+### 1. MySQL 初始化状态检查（必须先做）
+
+**位置已调整**：v1.5.2 起移到身份识别之前（详见 §2），确保花名册查询有可用的 MySQL 连接。
+
+### 2. 身份识别
+
+每次新会话开始时，**第一步必须**（在 MySQL 配置就绪后）实时查询 MySQL 花名册并确认员工身份：
+
+1. **调用花名册查询脚本**（机器可读 JSON，**禁止再读 `team_roster.yaml`**）：
+
+   ```bash
+   python scripts/load_roster.py --json
+   ```
+
+   输出示例（`members[*].name` 是在职人员，`members[*].biz_line_code` 用于第 3 步）：
+
+   ```json
+   {"status":"ok","total":16,"members":[{"name":"周峰","biz_line":["效贷"],"biz_line_code":["XD"],"role":"功能测试","active":true}, ...]}
+   ```
+
+   脚本执行失败 → 向用户说明"花名册查询失败，请联系管理员确认 MySQL 服务可用"，并终止服务。
 2. 向用户提问（**不展示花名册**，避免暴露人员信息）：
 
-```
-👋 欢迎使用效贷测试专家。请输入你的姓名？
-```
-
-3. 用户输入姓名后，去除首尾空格，与花名册中 `active: true` 的成员姓名进行**精确匹配**
-4. **匹配成功** → 将员工姓名缓存到会话上下文，回复"欢迎，{姓名}！请告诉我你需要做什么。"，开始服务
+   ```
+   👋 欢迎使用测试智能助手。请输入你的姓名？
+   ```
+3. 用户输入姓名后，去除首尾空格，与第 1 步返回的 `members[*].name` 进行**精确匹配**（`active=true` 成员）
+4. **匹配成功** → 确定本次会话的业务线 `{biz_line}`：
+   - 读取 `config/time_tracking_config.yaml` 的 `default_biz_line`
+   - 若该成员的 `biz_line_code` 只对应一条业务线 → 直接使用该业务线
+   - 若该成员属于多条业务线（`biz_line_code` 数组有多个值）→ **列出编号选项让用户输入数字选择**，禁止自由文本回答（避免笼统回答导致匹配不准确）：
+     ```
+     👤 {姓名}，你好！你属于以下多条业务线，请选择本次处理哪条（输入数字即可）：
+        1. 智慧记+运营系统
+        2. AI进销存
+        3. 智慧记零售
+     ```
+     - 编号按成员 `biz_line_code` 数组顺序生成；中文名由编码反查（`scripts/biz_line_helper.py` 的 `code_to_biz_line`，如 `ZHJ`→`智慧记+运营系统`、`AIJXC`→`AI进销存`、`ZHJLS`→`智慧记零售`）
+     - 用户输入数字 N → 映射到第 N 项业务线
+     - 用户输入非数字、或超出范围 → 重新提示，最多追问 2 次；仍无效则默认使用 `default_biz_line`（若 `default_biz_line` 也不在成员业务线内，则提示联系管理员）
+   - 将员工姓名和业务线一并缓存到会话上下文，回复"欢迎，{姓名}！请告诉我你需要做什么。"，开始服务
 5. **匹配失败** → 拒绝使用，回复：
 
-```
-❌ 抱歉，"{输入名}"不在效贷测试团队花名册中，你无法使用本专家。
-   如需开通权限，请联系管理员添加到花名册。
-```
+   ```
+   ❌ 抱歉，"{输入名}"不在测试团队花名册中，你无法使用本助手。
+      如需开通权限，请联系管理员通过 sync_roster_to_mysql.py 补登到 agent_team_roster 表。
+   ```
 
-**不提供"仍以该姓名继续"的选项**，直接终止，不执行任何后续操作。
+   **不提供"仍以该姓名继续"的选项**，直接终止，不执行任何后续操作。
 
 > **安全设计**：
 > - 不展示人员列表 → 防止信息泄露
 > - 精确匹配 → 防止模糊猜测
 > - 无 fallback → 只有花名册内人员可用
-> - 管理员通过修改 `config/team_roster.yaml` 控制访问权限
+> - 管理员通过修改 `config/team_roster.yaml` → 运行 `sync_roster_to_mysql.py` 控制访问权限
 
-> 身份确认后，整个会话的所有时间记录自动使用该姓名，无需重复输入。
->
-> **v1.5.1 新增：MySQL 配置自动初始化检查**：
-> 1. 若 `config/time_tracking_config.yaml` 中 `storage_mode="mysql"`，AI 必须检查本机 `~/.workbuddy/data/time-tracking/效贷/mysql_config.json` 是否存在。
-> 2. **已存在** → 继续服务，不打扰用户。
-> 3. **不存在** → 向用户说明：
->    ```
->    检测到本机尚未初始化 MySQL 配置，后续工时数据无法同步到团队共享数据库。
->    请输入 MySQL 密码（由管理员单独提供），我会自动完成初始化。
->    ```
-> 4. 用户输入密码后，AI 自动调用：
->    ```bash
->    python scripts/init_mysql_config.py \
->      --biz-line 效贷 \
->      --password "{用户输入的密码}" \
->      --employee "{已验证的员工姓名}" \
->      --no-interactive \
->      --quiet
->    ```
-> 5. 解析脚本输出的 JSON：
->    - `status=ok` → 提示"MySQL 配置初始化成功"，继续服务
->    - `status=skipped` → 继续服务
->    - `status=error` → 提示错误，可建议用户手动运行 `python scripts/init_mysql_config.py --biz-line 效贷`
-> 6. **禁止要求用户手动打开 CMD 执行命令**，AI 必须在对话中自动完成调用与错误处理。
+> 身份确认后，整个会话的所有时间记录自动使用该姓名和业务线，无需重复输入。
+
+### 3. MySQL 初始化状态检查（v1.5.1 起 AI 自动完成，测试人员无需手动开 CMD；v1.5.2 起移至身份识别之前）
+
+**位置变更**：v1.5.2 起，本节检查必须**在身份识别之前完成**——因为身份识别（§1）需要查询 MySQL `agent_team_roster` 表，没有 MySQL 连接则花名册拉不到。
+
+会话启动**第一步**，AI **自动检查**本机 MySQL 同步配置是否已初始化：
+
+1. 扫描 `~/.workbuddy/data/time-tracking/*/mysql_config.json` 是否存在（任意业务线有一份即可，因 `agent_team_roster` 与 `agent_time_tracking` 共用同一库）
+2. **已存在** → 直接进入身份识别（§1.1）
+3. **不存在** → 向用户说明并索要密码（**不阻塞服务**，本地记录始终可用）：
+
+   ```
+   🔧 检测到本机尚未初始化 MySQL 配置，后续花名册与服务数据将无法验证/同步。
+      请输入 MySQL 密码（由管理员单独提供），我会自动为你完成初始化。
+   ```
+
+4. 用户输入密码后，**AI 自动调用**初始化脚本：
+
+   ```bash
+   python scripts/init_mysql_config.py \
+     --biz-line "效贷" \
+     --password "{用户输入的密码}" \
+     --employee "pending" \
+     --no-interactive \
+     --quiet
+   ```
+
+5. **解析脚本输出的 JSON**（`--quiet` 模式输出机器可读结果）：
+   - `status=ok` → 提示"MySQL 配置初始化成功"，进入身份识别
+   - `status=skipped` → 配置已存在，进入身份识别
+   - `status=error` → 向用户展示错误信息，提示可联系管理员，或建议手动执行 `python scripts/init_mysql_config.py --biz-line "{biz_line}"`
+
+6. **禁止要求测试人员手动打开 CMD 执行命令**，AI 必须在对话中自动完成调用与错误处理。
+
+> **说明**：`mysql_config.json` 是本机私有配置（**含数据库密码**），**不会随 Skill 分发**，
+> 每台电脑需初始化一次。密码由管理员单独告知，**不要发到群里、不要提交到 Git**；
+> AI 仅在用户主动输入密码时调用初始化脚本，不会自行生成或猜测密码。
 
 ---
 
@@ -173,13 +239,9 @@
 - 用户回复"取消" / "不要了" → 不保存，标注"用户取消记录"，继续推进工作流
 - **不确认不保存**：用户未明确确认前，禁止调用记录脚本
 
-### 第 4 步：写入数据（JSONL 兜底 + MySQL 定时同步）
+### 第 4 步：写入本地 JSONL（兜底，v5 主流程）
 
-用户确认后，**立即执行以下两步**（都不可跳过）：
-
-#### 4a. 写入本地 JSONL（兜底，永远立即执行）
-
-调用 `record_time_saved.py` 脚本，**必须捕获其完整标准输出**（stdout）：
+用户确认后，调用 `record_time_saved.py` 脚本写入本地 JSONL：
 
 ```bash
 python scripts/record_time_saved.py \
@@ -188,35 +250,29 @@ python scripts/record_time_saved.py \
   --step "{步骤名称}" \
   --step-code "{步骤代码}" \
   --hours {小时数} \
-  --biz-line "效贷" \
+  --biz-line "{biz_line}" \
   --remark "{备注，可选}"
 ```
 
+> 也可以省略 `--biz-line`（脚本会自动读取 config 中的 `default_biz_line`）。
 > 如果用户用的是人天，则用 `--person-days {人天数}` 代替 `--hours`。脚本内部自动换算为小时存储。
 
-#### 4b. 集中存储说明（storage_mode=mysql，v1.5.0 起生效）
+**记录环节只写本地，不调用任何网络接口，永不失败**。MySQL 同步由定时任务完成
+（见第六节），**AI 在记录环节不需要、也不应该直接调用 `sync_to_mysql.py`**。
 
-仅当 `config/time_tracking_config.yaml` 中 `storage_mode="mysql"` 时执行本说明。
-
-**AI 无需实时调用任何云 API**。数据已在 4a 写入本地 JSONL，由本机**定时任务**（每日 12:00/18:00，`sync_to_mysql.py`）自动幂等 upsert 到共享 MySQL 表 `agent_time_tracking`。
-
-**确认信息中标注**（告知用户数据去向）：
-
-```
-📡 已写入本地记录，将在下次定时同步（每日 12:00 / 18:00）自动同步到团队共享 MySQL 数据库。
-```
-
-> 若用户手动触发同步（管理员操作）：运行 `python scripts/sync_to_mysql.py --biz-line 效贷` 立即同步。
-> 注意：记录自动携带用户故事编号（user_story_code），供 MySQL 端按故事维度统计。
-
-### 第 5 步：确认记录
-
-**显示记录成功状态**：
+### 第 5 步：确认记录 + 同步状态说明
 
 ```
 ✅ 已记录：{员工} 在 {用户故事} 的 {步骤名称} 环节节省了 {hours} 小时（{person_days} 人天）。
-   📡 已写入本地，将在下次定时同步（每日 12:00 / 18:00）自动同步到团队共享 MySQL。
+   📍 数据已保存到本机（records.jsonl）。
+
+   同步说明：
+   - 每日 12:00 / 18:00 定时任务会自动将本机记录同步到团队共享数据库（若已配置定时任务）
+   - 管理员可随时说"同步到数据库"或"同步时间数据"触发立即同步
+   - 若本机尚未初始化 MySQL 配置，数据会一直保存在本地，不会丢失（见第一节第 2 点）
 ```
+
+> 本环节不再有云端实时同步（v4 的 4b/4c 已移除），确认信息简洁明确。
 
 ---
 
@@ -229,7 +285,7 @@ python scripts/record_time_saved.py \
 - "效能统计" / "节省了多少时间" / "时间节省统计" / "工时统计"
 - "我的时间统计" / "个人时间报告"
 
-> **重要**：触发后**不等于**只在聊天里展示表格/数字。触发后必须按下面完整流程执行：**读取数据（MySQL）→ 识别报告范围（个人/管理员）→ 生成 HTML 报告 → 调用 present_files 展示 → 回复中给出本地路径**。
+> **重要**：触发后**不等于**只在聊天里展示表格/数字。触发后必须按下面完整流程执行：**读取数据 → 识别报告范围（个人/管理员）→ 生成 HTML 报告 → 按宿主环境展示报告（WorkBuddy 用 `present_files`，IDE 环境给出文件路径）→ 回复中给出本地完整路径**。
 
 ### 报告范围识别（必须先做，在数据读取之前）
 
@@ -237,64 +293,64 @@ python scripts/record_time_saved.py \
 
 | 查看者角色 | 报告范围 | 脚本参数 | 报告标题 | 文件名 |
 |-----------|---------|---------|---------|--------|
-| **测试人员**（普通员工） | 该员工个人历史累计：所有用户故事、所有步骤 | `--person "{姓名}"` | `效贷测试专家时间节省报告` | `time_analytics_效贷_{姓名}.html` |
-| **管理员**（role: admin） | 当前业务线所有测试人员汇总 | 不传 `--person` | `效贷测试专家时间节省报告` | `time_analytics_效贷.html` |
+| **测试人员**（普通员工） | 该员工个人历史累计：所有用户故事、所有步骤 | `--person "{姓名}"` | `{biz_line}测试时间节省报告` | `time_analytics_{biz_line}_{姓名}.html` |
+| **管理员**（role: admin） | 当前业务线所有测试人员汇总 | 不传 `--person` | `{biz_line}测试时间节省报告` | `time_analytics_{biz_line}.html` |
 
 > 测试人员报告：涵盖该员工自使用专家以来，在**所有**需求故事中执行**所有**步骤的累计节省数据，不是只展示当前故事的数据。管理员报告：涵盖业务线下**所有**测试人员的节省数据。
 
-### 数据来源（按 storage_mode 分支，必须严格按当前模式执行）
+### 数据来源（v5：始终从本地 JSONL 读取）
 
-**storage_mode=mysql 时（v1.5.0 起当前生效）**：
-
-> 数据源是共享 MySQL 表 `agent_time_tracking`。读取本机 `mysql_config.json` 连接 MySQL 查询全量数据，**不读本地 Excel，也不直接读本地 JSONL**（MySQL 才是权威汇总）。
+**从本地 JSONL 读取**（`~/.workbuddy/data/time-tracking/{biz_line}/records.jsonl`），
+因为记录环节只写本地，本地数据最完整、最实时。**不再从腾讯文档读取，不依赖任何连接器。**
 
 执行步骤：
 
-1. **读取本机配置**：读取 `~/.workbuddy/data/time-tracking/效贷/mysql_config.json`（含 host/port/user/password/database，由 `init_mysql_config.py` 生成）
-
-2. **从 MySQL 查询全量数据**：使用 `scripts/mysql_query_all.py`（或 pymysql 直接查询）执行：
-   ```sql
-   SELECT * FROM agent_time_tracking WHERE biz_line = '效贷' ORDER BY recorded_at ASC
-   ```
-
-3. **写入临时 JSON 文件**：将查询结果按字段（employee/user_story/step/step_code/time_saved_hours/time_saved_pd/total_hours/biz_line/remark/recorded_at/date/user_story_code）写入 `~/.workbuddy/data/time-tracking/效贷/_mysql_data.json`
-
-4. **生成本地 HTML 报告**：
+1. **（可选，保证最新）同步 MySQL 前先确认本地数据完整**：本地 JSONL 是唯一记录源，直接使用即可
+2. **生成本地 HTML 报告**：
    - 测试人员（普通员工）：
    ```bash
-   python scripts/generate_time_analytics.py --biz-line "效贷" --person "{姓名}" --input ~/.workbuddy/data/time-tracking/效贷/_mysql_data.json
+   python scripts/generate_time_analytics.py --biz-line "{biz_line}" --person "{姓名}"
    ```
    - 管理员：
    ```bash
-   python scripts/generate_time_analytics.py --biz-line "效贷" --input ~/.workbuddy/data/time-tracking/效贷/_mysql_data.json
+   python scripts/generate_time_analytics.py --biz-line "{biz_line}"
    ```
+3. **按宿主环境展示报告**（见下方「展示方式」说明）
 
-> 若 MySQL 连接失败（未生成 mysql_config.json / 网络不通）：告知用户"⚠️ 无法连接共享 MySQL，请先运行 `init_mysql_config.py` 生成配置或联系管理员检查数据库"；此时可**降级读取本地 JSONL**（`records.jsonl`）生成报告并注明数据可能不完整。
+> 如需"数据库里全团队汇总的离线版本"，管理员可先运行
+> `python scripts/sync_to_mysql.py --biz-line "{biz_line}"` 手动同步，再执行上述报告命令。
+> 报告始终以本地 JSONL 为准，与 MySQL 内容一致（MySQL 由同一 JSONL 幂等同步而来）。
 
-**storage_mode=excel 时**：
-1. 读取 `config/time_tracking_config.yaml` 获取 `excel.file_path`
-2. 调用脚本：`python scripts/generate_time_analytics.py --biz-line "效贷" --input <Excel文件路径>`
+### 展示方式（宿主无关，v5）
 
-**storage_mode=local 时**：
-1. 直接调用：`python scripts/generate_time_analytics.py --biz-line "效贷"`
+报告生成后必须展示给用户，方式随宿主环境：
+
+| 宿主环境 | 展示方式 | 说明 |
+|---------|---------|------|
+| **WorkBuddy**（测试专家 / 智能体） | 调用 `present_files` 工具 | 自动在右侧面板打开 HTML 预览，同时回复中附本地完整路径 |
+| **IDE 工具**（VSCode / OpenCode / Claude Code 等） | 回复中给出报告文件完整本地路径 | 提示用户用系统默认浏览器打开（或按宿主工具方式打开，如 Claude Code 可用 `/open` 命令） |
+
+> 两种环境都**必须完成**：① 生成 HTML 报告文件；② 在回复中给出报告的本地完整路径；
+> ③ 给出关键数字（以人天为主）。展示方式随宿主环境选择，缺一不可。
 
 ### 输出与展示（强制规则，不可跳过）
 
-> **⚠️ 硬性要求**：每次查看时间统计时，**必须同时完成以下三项**，缺一不可；**任何一项未完成，都禁止发送最终回复**。
-> 1. **生成 HTML 报告文件**：测试人员 → `time_analytics_效贷_{姓名}.html`，管理员 → `time_analytics_效贷.html`
-> 2. **调用 `present_files` 工具展示报告** — 这是 WorkBuddy 工具调用，必须自动在右侧面板打开 HTML 预览
+> **⚠️ 硬性要求**：每次查看时间统计时，**必须同时完成以下四项**，缺一不可；**任何一项未完成，都禁止发送最终回复**。
+> 1. **生成 HTML 报告文件**：测试人员 → `time_analytics_{biz_line}_{姓名}.html`，管理员 → `time_analytics_{biz_line}.html`
+> 2. **展示报告**：WorkBuddy 环境调用 `present_files`（右侧面板打开 HTML 预览）；IDE 环境在回复中给出报告文件的完整本地路径
 > 3. **在对话回复中附上报告文件的本地完整路径**，供用户直接访问
+> 4. **给出简要关键数字**（以人天为主展示）
 >
-> **禁止行为**：禁止只以聊天表格/文字播报数字；禁止生成报告但不调用 `present_files`；禁止用"我已在上方展示数据"等理由跳过文件生成；禁止测试人员报告展示非本人的数据。
+> **禁止行为**：禁止只以聊天表格/文字播报数字；禁止生成报告但不展示（WorkBuddy 不调用 `present_files`、IDE 不给文件路径均视为未展示）；禁止用"我已在上方展示数据"等理由跳过文件生成。
 
 **执行顺序**：
 
 1. **先识别人物身份**：根据会话开始时的花名册验证结果，判断是测试人员还是管理员
 2. 生成 HTML 报告文件（测试人员传 `--person "{姓名}"`）
-3. **立即**调用 `present_files` 工具展示报告（右侧面板打开预览）
+3. **立即**按宿主环境展示报告（WorkBuddy 调用 `present_files` 打开预览；IDE 环境在回复中给出文件路径）
 4. 在最终回复中依次给出：
    - 报告类型说明（个人/业务线）
-   - 本地完整路径（如 `C:\Users\kingdee\.workbuddy\data\time-tracking\效贷\time_analytics_效贷_何甜.html`）
+   - 本地完整路径（如 `C:\Users\{user}\.workbuddy\data\time-tracking\{biz_line}\time_analytics_{biz_line}_{姓名}.html`）
    - 简要关键数字（**以人天为主展示**）
    - 提示：HTML 报告内已内置筛选查询面板，可按员工/步骤/日期维度（月/季度/年）/用户故事名称灵活查询
 
@@ -302,7 +358,7 @@ python scripts/record_time_saved.py \
 
 **测试人员（个人报告）**：
 ```
-📊 效贷测试专家时间节省报告（{姓名} 个人视角）
+📊 {biz_line}测试时间节省报告（{姓名} 个人视角）
    累计节省：{Y} 人天（{X} 小时）
    覆盖故事：{M} 个
    记录总数：{K} 条
@@ -317,7 +373,7 @@ python scripts/record_time_saved.py \
 
 **管理员（业务线报告）**：
 ```
-📊 效贷测试专家时间节省报告（业务线视角）
+📊 {biz_line}测试时间节省报告（业务线视角）
    累计节省：{Y} 人天（{X} 小时）
    参与员工：{N} 人
    覆盖故事：{M} 个
@@ -337,60 +393,99 @@ python scripts/record_time_saved.py \
 ```
 
 **回复前自检清单（必须逐项确认）**：
-- [ ] HTML 文件 `time_analytics_效贷.html`（或个人版）已生成
-- [ ] `present_files` 工具已调用（右侧面板已打开 HTML 预览）
+- [ ] HTML 文件 `time_analytics_{biz_line}.html` 已生成
+- [ ] 报告已按宿主环境展示（WorkBuddy：`present_files` 已调用；IDE：回复中已给出文件路径）
 - [ ] 最终回复中包含报告的本地完整路径
+- [ ] 最终回复中包含关键数字（以人天为主）
 
 > 若缺少任意一项，**必须补完后再发送回复**。
 
 ### CSV 导出
 
 ```bash
-python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
+python scripts/generate_time_analytics.py --biz-line "{biz_line}" --format csv
 ```
 
 ---
 
-## 六、初始化集中存储（管理员操作）
+## 六、初始化集中存储（MySQL 共享数据库，管理员 + 测试人员配合）
 
-### 方案 A：Excel 文件（备选，无需 MySQL 授权）
-
-当管理员说"初始化时间追踪 Excel"时：
-
-1. 读取 `config/time_tracking_config.yaml` 获取 `excel.file_path`（默认 `~/.workbuddy/data/time-tracking/效贷/效贷时间追踪表.xlsx`）
-2. 调用 `python scripts/sync_to_excel.py --init --excel <路径>` 创建带表头的 Excel 模板
-3. 将 `storage_mode` 改为 `"excel"`
-4. 将 Excel 文件路径回填到配置
-5. 提示管理员：
-   - 将此 Excel 文件放到团队共享目录（如企业网盘、共享文件夹）
-   - 或分发给各员工，定期收集合并
-6. 通知所有员工：下次使用专家时数据将自动写入 Excel
-
-> 管理员也可在【更多】-【我的文件】中上传一个空白 Excel，然后告知 AI 文件路径，AI 直接写入。
+> v5 起集中存储统一为 **MySQL 共享数据库**（取代 v1.4.x 的腾讯文档智能表格）。
+> 每台电脑**一次性**配置，之后定时任务自动同步。
 >
-> ⚠️ 当前已切换到 MySQL 模式（v1.5.0 起），Excel 模式不再使用。如需切回 Excel 模式，将 `storage_mode` 改为 `"excel"` 即可。
+> **v1.5.1 起：测试人员首次使用专家时，AI 会自动完成初始化（见第一节第 2 点），
+> 无需手动打开 CMD。** 以下步骤保留作为手动备选方案（管理员排查 / AI 调用失败时使用）。
 
-### 方案 B：MySQL 共享数据库（v1.5.0 起当前生效）
+### 同步原理
 
-当管理员说"初始化时间追踪数据库"时：
+```
+你反馈时间 → 本地 records.jsonl → 定时任务(每日 12:00 / 18:00) 幂等同步 → 共享 MySQL
+```
 
-1. 确认 MySQL 服务端已建库建表：表 `agent_time_tracking`，唯一键 `record_key`（MD5(biz_line_code|employee|user_story|step_code|timestamp秒)）
-2. 将数据库连接信息（host/port/database/账号/密码）告知各测试人员（密码不要写入专家包或 Git）
-3. **v1.5.1 起，AI 在会话启动身份验证后自动检测本机配置**：
-   - 若 `~/.workbuddy/data/time-tracking/效贷/mysql_config.json` 不存在，AI 会自动询问密码并调用：
-     ```bash
-     python scripts/init_mysql_config.py --biz-line 效贷 --password "{密码}" --employee "{姓名}" --no-interactive --quiet
-     ```
-   - 若已存在，则安全跳过。
-4. 测试人员无需手动打开 CMD；如自动初始化失败，可降级手动运行：
-   ```bash
-   python scripts/init_mysql_config.py --biz-line 效贷
+- 记录环节只写本地，**零网络依赖、永不失败**；
+- 同步是幂等 upsert（唯一键 `record_key` = MD5(biz_line_code|employee|user_story|step_code|timestamp秒)），**重复跑不会产生重复数据**；
+- 记录自动携带**用户故事编号**（`user_story_code`，如 `PRJ-00769736`），便于按故事维度统计。
+
+### 第 1 步：测试人员一次性初始化（每台电脑执行一次）
+
+> **正常情况下由 AI 自动完成**（会话启动时检测 `mysql_config.json` 缺失 → 索要密码 → 自动调用脚本）。
+> 以下为手动方式，仅在 AI 无法自动完成或管理员排查时使用：
+
+1. 找到本 skill 的 scripts 目录（以你本机用户名替换 `<你的用户名>`）：
+
    ```
-5. 将 `config/time_tracking_config.yaml` 的 `storage_mode` 改为 `"mysql"`
-6. 配置定时同步任务（每日 12:00/18:00 调用 `scripts/sync_to_mysql.py`，Windows 用 schtasks / .bat）
+   C:\Users\<你的用户名>\.workbuddy\data\...\scripts\    ← 实际以 skill 安装位置为准
+   ```
 
-> 初始化指令：用户说"初始化时间追踪数据库"或"初始化 MySQL"时触发此流程。
-> **多业务线说明**：`init_mysql_config.py` 已内置效贷/泾渭云/小贷/智慧记零售等业务线映射，传入 `--biz-line {业务线}` 即可自动生成对应目录（如 `time-tracking/泾渭云/mysql_config.json`），biz_line_code 自动映射。
+2. 在 CMD 中运行初始化脚本（会提示输入 MySQL 密码，其余字段已默认填好，直接回车即可）：
+
+   ```bat
+   cd <本 skill 的 scripts 目录>
+   python init_mysql_config.py --biz-line {biz_line}
+   ```
+
+   > AI 自动模式使用的等价命令（`--auto`：已存在自动跳过；`--quiet`：输出机器可读 JSON）：
+   > ```bash
+   > python scripts/init_mysql_config.py --biz-line "{biz_line}" --password "xxx" --employee "{姓名}" --no-interactive --quiet
+   > ```
+
+3. 脚本会生成本机配置文件：`C:\Users\<你的用户名>\.workbuddy\data\time-tracking\{biz_line}\mysql_config.json`
+
+> ⚠️ **必须完成此步骤**。如果未生成 mysql_config.json，测试人员反馈的时间数据只会保存在本机 JSONL，不会同步到团队共享 MySQL 数据库，管理员也无法在数据库中看到这些数据。
+>
+> ⚠️ `mysql_config.json` 是本机私有配置（**含数据库密码**），**不要发到群里、不要提交到 Git**。密码由管理员单独告知。
+>
+> 此步骤只需执行一次。更换电脑需重新运行。
+
+### 第 2 步：注册定时任务（管理员统一配置或各人自配）
+
+以管理员身份打开 CMD，执行（把 `<scripts目录>` 换成实际路径，任务名可带业务线标识）：
+
+```bat
+schtasks /create /tn "{biz_line}时间同步-午" /tr "<scripts目录>\sync_task.bat" /sc daily /st 12:00 /f
+schtasks /create /tn "{biz_line}时间同步-晚" /tr "<scripts目录>\sync_task.bat" /sc daily /st 18:00 /f
+```
+
+> `sync_task.bat` 顶部有 `set BIZ_LINE={biz_line}`，部署时确认已改成你的业务线名称。
+> 查看：`schtasks /query /tn "{biz_line}时间同步-午"`；删除：`schtasks /delete /tn "..." /f`。
+
+### 第 3 步：手动同步 / 验证（可选）
+
+用户说"同步到数据库" / "同步时间数据"时，AI 执行：
+
+```bat
+python sync_to_mysql.py --biz-line {biz_line} --dry-run    :: 试运行，只看不写
+python sync_to_mysql.py --biz-line {biz_line}              :: 真实同步（看到"同步完成: 成功 N 条 / 失败 0 条"即成功）
+```
+
+### 常见问题
+
+| 现象 | 处理 |
+|------|------|
+| 提示「配置文件不存在」 | **正常流程**：会话启动时 AI 会自动检测并引导初始化（索要密码 → 自动调用脚本）。若 AI 未能自动完成，手动运行一次 `python init_mysql_config.py --biz-line {biz_line}` |
+| **新电脑没有 mysql_config.json** | **正常现象**：该文件是本机私有配置，**不会随 Skill 分发**。在新电脑上首次使用专家时 AI 会自动引导初始化，也可手动运行上面的初始化脚本 |
+| 同步报「无法连接 MySQL」 | 检查本机网络是否能访问数据库服务器（host/port），密码是否正确（可重跑初始化脚本） |
+| 忘记数据库密码 | 联系管理员获取，密码不随 Skill 分发 |
 
 ---
 
@@ -400,28 +495,33 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 
 | 模式 | 说明 | 配置值 |
 |------|------|--------|
-| 本地 | 仅 JSONL，无集中存储 | `local` |
-| Excel | JSONL + Excel 文件（管理员分发或共享目录） | `excel` |
-| MySQL | JSONL + 定时任务幂等同步到共享 MySQL（v1.5.0 起当前生效） | `mysql` |
+| 本地 + MySQL（推荐） | JSONL 本地兜底 + 定时任务同步共享 MySQL | `mysql` |
+| 仅本地 | 仅 JSONL，无集中存储 | `local` |
+| Excel（可选附加） | JSONL + Excel 文件（管理员分发或共享目录） | `excel` |
+
+> 默认 `mysql`：开箱即用（本地记录），配置好 MySQL 后自动进入团队汇总模式。
 
 ### 本地存储（始终启用，作为兜底）
 
 ```
-~/.workbuddy/data/time-tracking/效贷/
-├── records.jsonl                  # 原始记录（JSONL，每行一条）
-├── time_analytics_效贷.html       # HTML 分析报告
-├── time_analytics_效贷.csv        # CSV 导出（按需生成）
-├── _mysql_data.json               # MySQL 查询数据临时文件（查看统计时生成）
-└── mysql_config.json              # 本机 MySQL 连接凭证（含密码，不随专家包分发）
+~/.workbuddy/data/time-tracking/{biz_line}/
+├── records.jsonl                  # 原始记录（JSONL，每行一条，唯一数据源）
+├── mysql_config.json              # MySQL 连接配置（本机私有，初始化脚本生成，含密码！）
+├── time_analytics_{biz_line}.html # HTML 分析报告
+└── time_analytics_{biz_line}.csv  # CSV 导出（按需生成）
 ```
 
-### MySQL 存储（storage_mode=mysql 时，v1.5.0 起）
+### MySQL 共享数据库（storage_mode=mysql 时）
 
-共享 MySQL 表 `agent_time_tracking`，所有员工数据汇总。同步由本机定时任务（每日 12:00/18:00 调用 `sync_to_mysql.py`）幂等 upsert 完成，唯一键 `record_key`（MD5(biz_line_code|employee|user_story|step_code|timestamp秒)），重复同步不产生重复数据。
+- 定时任务（每日 12:00 / 18:00）将本地 JSONL 幂等同步到共享库 `agent_time_tracking` 表
+- 管理员可用 SQL 查询汇总，或随时说"同步到数据库"触发立即同步
+- 数据以 `record_key` 去重，重复同步不产生重复数据
 
-### Excel 存储（storage_mode=excel 时）
+### Excel 存储（storage_mode=excel 时，可选）
 
 管理员指定的 Excel 文件，包含表头和数据行。所有员工共享（通过共享目录或定期收集合并）。
+初始化：`python scripts/sync_to_excel.py --init --excel <路径>`，追加：`--append <json>`，
+全量同步：`--sync-all --jsonl <路径>`。
 
 ### 数据格式（每条记录，存储单位统一为小时）
 
@@ -429,9 +529,10 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 {
   "timestamp": "2026-07-21T17:24:07+08:00",
   "date": "2026-07-21",
-  "biz_line": "效贷",
-  "employee": "吴香康",
+  "biz_line": "{biz_line}",
+  "employee": "{员工姓名}",
   "user_story": "US-001-贷款审批流程优化",
+  "user_story_code": "PRJ-00769736",
   "step": "文档整理",
   "step_code": "01",
   "time_saved_hours": 4.0,
@@ -457,8 +558,9 @@ python scripts/generate_time_analytics.py --biz-line "效贷" --format csv
 4. **不伪造**：禁止 AI 自行估算时间，必须由用户提供。参考时间仅展示，不自动填入。
 5. **身份必选且严格校验**：会话开始必须通过盲输入+花名册精确匹配验证身份。不展示列表、无 fallback、匹配失败直接拒绝服务。
 6. **会话缓存**：员工姓名（身份确认后）和用户故事（首次填写后）在会话内缓存。
-7. **业务线隔离**：所有记录固定 `biz_line="效贷"`。
+7. **业务线隔离**：所有记录使用身份确认环节确定的 `biz_line`（默认取 config 中 `default_biz_line`，跨业务线员工以其选择为准），不同业务线数据存放在不同目录。
 8. **统一存储单位**：底层存储统一为小时（1人天=8小时），报告展示以人天为主。
-9. **双写策略**：mysql/excel 模式下同时写本地 JSONL 和集中存储，本地为兜底；MySQL 同步由定时任务完成，AI 无需实时调用云 API。
+9. **本地优先（v5）**：记录只写本地 JSONL（唯一数据源），MySQL 同步由定时任务完成，AI 不主动调用同步脚本（用户明确要求"同步到数据库"时除外）。
 10. **报告公开**：任何员工都可查看全团队统计数据，无权限分级。
-11. **【强制】报告必展示（未完成禁止回复）**：每次查看时间统计时，必须同时完成三件事——① 生成 HTML 报告；② 调用 `present_files` 工具在右侧面板打开预览；③ 在对话回复中附上报告本地完整路径。三者缺一不可，缺少任意一项时**禁止发送最终回复**。禁止只以聊天表格/文字播报数字，禁止用"数据已在上方展示"等理由跳过文件生成。报告仅本地展示，不涉及腾讯文档上传。
+11. **【强制】报告必生成必展示（未完成禁止回复）**：每次查看时间统计时，必须同时完成四件事——① 生成 HTML 报告；② 按宿主环境展示报告（WorkBuddy 调用 `present_files` 打开预览；IDE 环境在回复中给出文件路径）；③ 在对话回复中附上报告本地完整路径；④ 给出关键数字（以人天为主）。四者缺一不可，缺少任意一项时**禁止发送最终回复**。禁止只以聊天表格/文字播报数字，禁止用"数据已在上方展示"等理由跳过文件生成。
+12. **MySQL 初始化自动完成（v1.5.1）+ 花名册实时查 MySQL（v1.5.2）**：会话启动检查到 `mysql_config.json` 缺失时，必须按第一节第 3 点**自动完成初始化**（索要密码 → 自动调用 `init_mysql_config.py` → 解析 JSON 结果），**禁止要求测试人员手动打开 CMD**；初始化前不阻塞服务（本地记录始终可用），用户拒绝提供密码时跳过初始化继续服务并说明数据仅存本地。身份识别一律实时查询 MySQL `agent_team_roster` 表（调用 `scripts/load_roster.py --json`），**禁止读 `team_roster.yaml` 做身份匹配**。

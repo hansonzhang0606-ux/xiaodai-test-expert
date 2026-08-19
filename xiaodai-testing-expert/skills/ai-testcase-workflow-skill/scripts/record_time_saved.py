@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-时间节省记录脚本 v3
+时间节省记录脚本 v3（通用多业务线版）
 在工作流每个步骤完成后，记录该步骤为人类员工节省了多少时间。
 
 v3 改进:
@@ -9,25 +9,27 @@ v3 改进:
   - 统一存储单位：底层始终以小时存储，time_saved_pd 为换算值
   - Excel 同步：storage_mode=excel 时自动追加到 Excel 文件
   - 花名册校验 + 参考时间展示
+  - biz_line 可配置：--biz-line 参数优先，未指定时读取
+    config/time_tracking_config.yaml 的 default_biz_line
 
 用法:
   python record_time_saved.py \
-    --employee "吴香康" \
+    --employee "张三" \
     --user-story "US-001-贷款审批流程优化" \
     --step "文档整理" \
     --step-code "01" \
     --hours 4.0 \
-    --biz-line "效贷" \
+    --biz-line "智慧记+运营系统" \
     --remark "原本需要手动整理5个文档"
 
   # 也可以用人天为单位输入，脚本自动换算为小时存储
   python record_time_saved.py \
-    --employee "周峰" \
+    --employee "李四" \
     --user-story "US-001" \
     --step "用例细化" \
     --step-code "06" \
     --person-days 1.5 \
-    --biz-line "效贷"
+    --biz-line "智慧记+运营系统"
 
 数据存储位置:
   ~/.workbuddy/data/time-tracking/{biz_line}/records.jsonl
@@ -78,7 +80,7 @@ def extract_user_story_code(user_story: str) -> str:
         return m.group(0)
     return ""
 
-# 花名册缓存
+# 花名册缓存（实时从 MySQL agent_team_roster 查询）
 _roster_cache = None
 
 
@@ -88,56 +90,58 @@ def get_skill_dir() -> str:
 
 
 def load_team_roster() -> dict:
-    """加载花名册"""
+    """加载花名册（实时从 MySQL agent_team_roster 查询，不再读 team_roster.yaml）
+
+    返回兼容旧格式：{"members": [{"name", "role", "active", "biz_line_code", "biz_line"}, ...], "error": str|None}
+    MySQL 配置缺失 / 连接失败时返回空花名册 + error 信息（上层可降级处理）。
+    """
     global _roster_cache
     if _roster_cache is not None:
         return _roster_cache
 
-    roster_path = os.path.join(get_skill_dir(), "config", "team_roster.yaml")
-    if not os.path.exists(roster_path):
-        _roster_cache = {"members": []}
+    try:
+        from load_roster import load_roster_from_mysql
+        # 一次性查全部（含离职），便于区分"在职"/"已离职"/"不在花名册"
+        roster, _cfg_path = load_roster_from_mysql(include_inactive=True)
+    except Exception as e:
+        _roster_cache = {"members": [], "error": str(e)}
         return _roster_cache
 
-    # 简单 YAML 解析（避免 PyYAML 依赖）
-    try:
-        import yaml
-        with open(roster_path, "r", encoding="utf-8") as f:
-            _roster_cache = yaml.safe_load(f)
-        return _roster_cache
-    except ImportError:
-        # 无 PyYAML 时用简易解析
-        members = []
-        current = {}
-        with open(roster_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.rstrip()
-                if line.strip().startswith("- name:"):
-                    if current:
-                        members.append(current)
-                    current = {"name": line.split(":", 1)[1].strip().strip('"')}
-                elif "role:" in line and current:
-                    current["role"] = line.split(":", 1)[1].strip().strip('"')
-                elif "active:" in line and current:
-                    current["active"] = line.split(":", 1)[1].strip().strip('"').lower() == "true"
-            if current:
-                members.append(current)
-        _roster_cache = {"members": members}
-        return _roster_cache
+    members = []
+    for name, info in roster.items():
+        members.append({
+            "name": name,
+            "role": info.get("role") or "功能测试",
+            "active": bool(info.get("active", True)),
+            "biz_line_code": info.get("biz_line_code", []),
+            "biz_line": info.get("biz_line", []),
+        })
+    _roster_cache = {"members": members, "error": None}
+    return _roster_cache
 
 
 def validate_employee(employee: str) -> tuple:
-    """校验员工是否在花名册中"""
+    """实时校验员工身份（MySQL agent_team_roster 表）
+
+    返回 (is_valid, status, error_or_none)。status 取值：
+      - "在职"：active=1，可正常服务
+      - "已离职/停用"：active=0，已无权限
+      - "不在花名册中"：从未入库
+      - "花名册查询失败"：MySQL 配置缺失或连接失败
+    """
     roster = load_team_roster()
+    if roster.get("error"):
+        return False, "花名册查询失败", roster["error"]
     members = roster.get("members", [])
     active_names = [m["name"] for m in members if m.get("active", True)]
     all_names = [m["name"] for m in members]
 
     if employee in active_names:
-        return True, "在职"
+        return True, "在职", None
     elif employee in all_names:
-        return False, "已离职/停用"
+        return False, "已离职/停用", None
     else:
-        return False, "不在花名册中"
+        return False, "不在花名册中", None
 
 
 def get_data_dir(biz_line: str) -> str:
@@ -160,18 +164,24 @@ def record(
     step_code: str,
     hours: float = None,
     person_days: float = None,
-    biz_line: str = "效贷",
+    biz_line: str = "",
     remark: str = "",
     skip_validation: bool = False,
 ):
-    """记录一条时间节省数据"""
-    # 花名册校验
+    """记录一条时间节省数据（biz_line 未指定时自动从配置解析）"""
+    if not biz_line:
+        from biz_line_helper import resolve_biz_line
+        biz_line = resolve_biz_line("")
+    # 花名册校验（实时查 MySQL agent_team_roster）
     if not skip_validation:
-        valid, status = validate_employee(employee)
-        if not valid and status == "不在花名册中":
-            print(f"⚠️  警告：员工 '{employee}' 不在效贷花名册中。", file=sys.stderr)
+        valid, status, err = validate_employee(employee)
+        if not valid and status == "花名册查询失败":
+            print(f"⚠️  警告：花名册查询失败（{err}），无法校验员工身份。", file=sys.stderr)
+            print(f"   本次记录仍会保存，但建议核实。", file=sys.stderr)
+        elif not valid and status == "不在花名册中":
+            print(f"⚠️  警告：员工 '{employee}' 不在花名册中。", file=sys.stderr)
             print(f"   花名册在职人员：{', '.join(m['name'] for m in load_team_roster().get('members', []) if m.get('active', True))}", file=sys.stderr)
-            print(f"   如确为此员工，请联系管理员添加到 config/team_roster.yaml", file=sys.stderr)
+            print(f"   如确为此员工，请联系管理员通过 sync_roster_to_mysql.py 补登到 agent_team_roster 表。", file=sys.stderr)
             print(f"   本次记录仍会保存，但建议核实。", file=sys.stderr)
         elif not valid and status == "已离职/停用":
             print(f"⚠️  警告：员工 '{employee}' 在花名册中标记为停用。", file=sys.stderr)
@@ -244,19 +254,11 @@ def record(
         print(f"   备注: {remark}")
     print(f"   存储位置: {records_path}")
 
-    # Excel 同步（storage_mode=excel 时）
+    # Excel 同步（storage_mode=excel 时，可选附加）
     try:
         sync_to_excel_if_configured(record, biz_line)
     except Exception as e:
         print(f"⚠️  Excel 同步失败（不影响本地记录）: {e}", file=sys.stderr)
-
-    # Cloud 同步 JSON 输出（storage_mode=cloud 时，AI 提取后调用 MCP）
-    try:
-        cloud_sync_json = build_cloud_sync_json(record, biz_line)
-        if cloud_sync_json:
-            print("CLOUD_SYNC_JSON: " + json.dumps(cloud_sync_json, ensure_ascii=False))
-    except Exception as e:
-        print(f"⚠️  Cloud 同步 JSON 构造失败（不影响本地记录）: {e}", file=sys.stderr)
 
     return record
 
@@ -305,75 +307,6 @@ def sync_to_excel_if_configured(record: dict, biz_line: str):
     print(f"📊 已同步到 Excel: {excel_path}")
 
 
-def build_cloud_sync_json(record: dict, biz_line: str) -> dict:
-    """如果配置了 cloud 存储模式，构造 mcp__tencent-docs__smartsheet.add_records 的参数 JSON
-
-    返回的 dict 可以直接作为 add_records 的入参（包含 file_id / sheet_id / records）。
-    脚本本身不调用 MCP，仅输出 JSON 供 AI 提取并转发。
-    """
-    config = load_tracking_config()
-    storage_mode = config.get("storage_mode", "local")
-
-    if storage_mode != "cloud":
-        return None
-
-    tencent_config = config.get("tencent_docs", {})
-    file_id = tencent_config.get("doc_id", "")
-    sheet_id = tencent_config.get("sheet_id", "")
-
-    if not file_id or not sheet_id:
-        print("⚠️  storage_mode=cloud 但未配置 tencent_docs.doc_id/sheet_id，跳过 Cloud 同步 JSON 构造", file=sys.stderr)
-        return None
-
-    field_mapping = tencent_config.get("field_mapping", [])
-
-    # 根据 field_mapping 构造 field_values
-    field_values = []
-    for mapping in field_mapping:
-        json_key = mapping.get("json_key", "")
-        field_name = mapping.get("field", "")
-        value_type = mapping.get("value_type", "text_value")
-        optional = mapping.get("optional", False)
-
-        if not json_key or not field_name:
-            continue
-
-        value = record.get(json_key, "")
-        if value == "" and optional:
-            continue
-
-        if value_type == "text_value":
-            field_values.append({
-                "field": field_name,
-                "text_value": {
-                    "items": [{"text": str(value), "type": "text"}]
-                }
-            })
-        elif value_type == "number_value":
-            try:
-                num_value = float(value) if value != "" else 0.0
-            except (ValueError, TypeError):
-                num_value = 0.0
-            field_values.append({
-                "field": field_name,
-                "number_value": num_value
-            })
-        else:
-            # 其他类型统一按 text 处理
-            field_values.append({
-                "field": field_name,
-                "text_value": {
-                    "items": [{"text": str(value), "type": "text"}]
-                }
-            })
-
-    return {
-        "file_id": file_id,
-        "sheet_id": sheet_id,
-        "records": [{"field_values": field_values}]
-    }
-
-
 def main():
     parser = argparse.ArgumentParser(description="记录时间节省数据 v2")
     parser.add_argument("--employee", required=True, help="员工姓名（需在花名册中）")
@@ -382,7 +315,7 @@ def main():
     parser.add_argument("--step-code", default="", help="步骤代码（01/02/04/06/07）")
     parser.add_argument("--hours", type=float, default=None, help="节省时间（小时）")
     parser.add_argument("--person-days", type=float, default=None, help="节省时间（人天）")
-    parser.add_argument("--biz-line", default="效贷", help="业务线（默认：效贷）")
+    parser.add_argument("--biz-line", default="", help="业务线（未指定时读取 config 中 default_biz_line）")
     parser.add_argument("--remark", default="", help="备注")
     parser.add_argument("--skip-validation", action="store_true", help="跳过花名册校验")
 

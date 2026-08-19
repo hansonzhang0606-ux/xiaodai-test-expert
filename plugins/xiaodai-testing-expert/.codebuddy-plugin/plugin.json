@@ -1,19 +1,19 @@
 {
   "name": "xiaodai-testing-expert",
-  "version": "1.5.0",
-  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0: user story directory auto-management (D:\\效贷-产品需求\\{编号}-{名称}), cloud sync fix (script-generated JSON forwarded to Tencent Docs), updated defaultInitPrompt and quickPrompts. v1.4.1: HTML analytics report auto-uploaded to Tencent Docs My Documents via aipage/smartpage. v1.4.2: strengthened 'view time-saving stats' workflow to always generate/present/upload HTML report; added step-number prefixes (1/2/4/6) to output files for clear stage identification. v1.4.3: 'view time-saving stats' response now includes local HTML path AND Tencent Docs navigation hint (More > My Files > Task Results). v1.4.4: auto-detect viewer role — testers get personal cumulative report (all stories, all steps) with --person filter; admins get business-line all-testers report; JS filter panel supports queries by employee/step/date(month/quarter/year)/story. v1.5.0: time-saving data sync to MySQL — local JSONL upserted to a shared MySQL table via daily scheduled task (12:00/18:00), with bundled pymysql driver, machine-local config, and idempotent record_key dedup.",
+  "version": "1.5.2",
+  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0: user story directory auto-management (D:\\效贷-产品需求\\{编号}-{名称}), cloud sync fix (script-generated JSON forwarded to Tencent Docs), updated defaultInitPrompt and quickPrompts. v1.4.1: HTML analytics report auto-uploaded to Tencent Docs My Documents via aipage/smartpage. v1.4.2: strengthened 'view time-saving stats' workflow to always generate/present/upload HTML report; added step-number prefixes (1/2/4/6) to output files for clear stage identification. v1.4.3: 'view time-saving stats' response now includes local HTML path AND Tencent Docs navigation hint (More > My Files > Task Results). v1.4.4: auto-detect viewer role — testers get personal cumulative report (all stories, all steps) with --person filter; admins get business-line all-testers report; JS filter panel supports queries by employee/step/date(month/quarter/year)/story. v1.5.0: time-saving data sync to MySQL — local JSONL upserted to a shared MySQL table via daily scheduled task (12:00/18:00), with bundled pymysql driver, machine-local config, and idempotent record_key dedup; stats reports read full data from MySQL and are shown locally only — Tencent Docs dependency fully removed (no smartsheet sync, no report upload). v1.5.1: auto-initialize MySQL config on session start — after identity verification, AI checks for local mysql_config.json and calls init_mysql_config.py with --auto/--employee/--biz-line; supports multi-business-line mapping (Xiaodai/Jingweiyun/Xiaodai-loan/Zhihuiji-retail); config already exists is skipped safely; testers no longer need to manually run CMD. v1.5.2: identity verification now queries MySQL agent_team_roster table in real time (no longer reads team_roster.yaml, which becomes an input source pushed to MySQL via sync_roster_to_mysql.py); added scripts/load_roster.py for AI to fetch active members as JSON; session-start order adjusted so MySQL config check precedes roster query. ",
   "author": {
     "name": "Quality Management Team",
     "email": "qa@kingdee.com"
   },
-  "agents": ["./agents/xiaodai-testing-expert.md"],
+  "agents": [
+    "./agents/xiaodai-testing-expert.md"
+  ],
   "skills": [
     "./skills/ai-testcase-workflow-skill"
   ],
-
   "expertType": "agent",
   "agentName": "xiaodai-testing-expert",
-
   "displayName": {
     "en": "Xiaodai Testing Expert",
     "zh": "效贷测试专家"
@@ -23,8 +23,8 @@
     "zh": "效贷功能测试专家"
   },
   "displayDescription": {
-    "en": "[v1.5.0] Xiaodai testing expert with end-to-end pipeline: requirement consolidation (local directory or Confluence page), review, test point generation, case refinement, knowledge archiving, and mandatory time-saving tracking with team roster. HTML report always generated, presented, and uploaded to Tencent Docs My Documents. Output files use step-number prefixes (1/2/4/6) for clear stage identification. Time-saving stats response now includes local HTML path and Tencent Docs navigation hint (More > My Files > Task Results).",
-    "zh": "【v1.5.0】效贷业务线功能测试专家，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库的端到端流水线。内置花名册盲输入身份验证、强制时间节省追踪（二次确认+腾讯文档智能表格同步+用户故事目录自动管理），查看统计时强制生成、展示并上传 HTML 报告到腾讯文档【我的文档】。各步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤。查看统计回复同步告知本地 HTML 路径与腾讯文档导航路径（更多 > 我的文件 > 任务成果）。"
+    "en": "[v1.5.2] Xiaodai testing expert with end-to-end pipeline: requirement consolidation (local directory or Confluence page), review, test point generation, case refinement, knowledge archiving, and mandatory time-saving tracking with team roster. Time-saving data synced to shared MySQL via scheduled tasks; stats reports always generated, presented via preview panel, and local path provided in reply. Output files use step-number prefixes (1/2/4/6) for clear stage identification. v1.5.1: auto-initialize MySQL config on session start — after identity verification, AI checks for local mysql_config.json and calls init_mysql_config.py with --auto/--employee/--biz-line; supports multi-business-line mapping (Xiaodai/Jingweiyun/Xiaodai-loan/Zhihuiji-retail); config already exists is skipped safely; testers no longer need to manually run CMD. v1.5.2: identity verification now queries MySQL agent_team_roster table in real time (no longer reads team_roster.yaml, which becomes an input source pushed to MySQL via sync_roster_to_mysql.py); added scripts/load_roster.py for AI to fetch active members as JSON; session-start order adjusted so MySQL config check precedes roster query. ",
+    "zh": "【v1.5.2】效贷业务线功能测试专家，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库的端到端流水线。内置花名册盲输入身份验证、强制时间节省追踪（二次确认+MySQL定时同步+用户故事目录自动管理）。节省时间数据由定时任务同步到共享 MySQL，查看统计时强制生成 HTML 报告并在右侧面板展示、回复附本地路径（不再依赖腾讯文档）。各步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤。 v1.5.1：会话启动时自动初始化 MySQL 配置——身份验证通过后，AI 自动检测本机 mysql_config.json 并调用 init_mysql_config.py（--auto/--employee/--biz-line）；支持多业务线映射（效贷/泾渭云/小贷/智慧记零售等）；配置已存在时安全跳过；测试人员无需手动执行 CMD。 v1.5.2：身份识别改为实时查询 MySQL agent_team_roster 表（不再读取 team_roster.yaml，yaml 退化为输入源，经 sync_roster_to_mysql.py 推到 MySQL）；新增 scripts/load_roster.py 供 AI 以 JSON 拉取在职人员；会话启动顺序调整为 MySQL 配置检查先于花名册查询。"
   },
   "avatar": "avatars/expert.png",
   "categoryId": "10-ProjectQuality",
@@ -33,14 +33,35 @@
     "en": "I am the Xiaodai Testing Expert. I can help you with requirement consolidation (local directory or Confluence page), requirement review, test point generation, case refinement, and knowledge archiving. Before we start, I need to verify your identity. Please enter your name."
   },
   "tags": [
-    { "en": "Functional Testing", "zh": "功能测试" },
-    { "en": "Test Case Workflow", "zh": "用例工作流" },
-    { "en": "Time Tracking", "zh": "时间节省追踪" }
+    {
+      "en": "Functional Testing",
+      "zh": "功能测试"
+    },
+    {
+      "en": "Test Case Workflow",
+      "zh": "用例工作流"
+    },
+    {
+      "en": "Time Tracking",
+      "zh": "时间节省追踪"
+    }
   ],
   "quickPrompts": [
-    { "en": "Help me consolidate the requirement documents in this directory.", "zh": "帮我整理这个需求目录下的文档。" },
-    { "en": "Extract this Confluence page and prepare it for review.", "zh": "提取这个 Confluence 页面内容并整理成需求文档。" },
-    { "en": "Review this requirement and identify risks and gaps.", "zh": "评审这份需求，指出风险和缺失点。" },
-    { "en": "Show time-saving analytics for Xiaodai business line.", "zh": "查看时间节省统计" }
+    {
+      "en": "Help me consolidate the requirement documents in this directory.",
+      "zh": "帮我整理这个需求目录下的文档。"
+    },
+    {
+      "en": "Extract this Confluence page and prepare it for review.",
+      "zh": "提取这个 Confluence 页面内容并整理成需求文档。"
+    },
+    {
+      "en": "Review this requirement and identify risks and gaps.",
+      "zh": "评审这份需求，指出风险和缺失点。"
+    },
+    {
+      "en": "Show time-saving analytics for Xiaodai business line.",
+      "zh": "查看时间节省统计"
+    }
   ]
 }
