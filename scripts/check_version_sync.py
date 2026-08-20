@@ -122,6 +122,7 @@ def zip_skill_version(path):
 # ---------------------------------------------------------------
 
 SUBS = ['experts/plugins/xiaodai-testing-expert', 'my-experts/plugins/xiaodai-testing-expert',
+        'my-experts/xiaodai-testing-expert',
         'xiaodai-test-expert-marketplace/plugins/xiaodai-testing-expert',
         'xiaodai-test-expert-marketplace/xiaodai-testing-expert']
 PROMPTS = ['document_consolidate', 'knowledge_base_archive', 'requirement_review',
