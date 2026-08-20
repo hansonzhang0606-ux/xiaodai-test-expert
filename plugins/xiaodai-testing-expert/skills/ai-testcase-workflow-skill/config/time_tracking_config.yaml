@@ -35,7 +35,7 @@ excel:
 # ============================================================
 # 本机连接凭证保存在 ~/.workbuddy/data/time-tracking/效贷/mysql_config.json
 # （含数据库密码，不随专家包分发，由管理员告知后运行 init_mysql_config.py 生成）
-# 同步链路：record_time_saved.py 写本地 JSONL → 定时任务（每日 12:00/18:00）
+# 同步链路：record_time_saved.py 写本地 JSONL → 定时任务（每日 09:00/12:00/18:00）
 # 调用 sync_to_mysql.py 幂等 upsert → MySQL 表 agent_time_tracking
 mysql:
   config_file: "~/.workbuddy/data/time-tracking/效贷/mysql_config.json"

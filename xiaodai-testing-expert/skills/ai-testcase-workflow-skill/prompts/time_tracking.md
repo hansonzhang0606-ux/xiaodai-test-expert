@@ -22,7 +22,7 @@
 > 以身份确认环节员工选择的业务线为准。
 >
 > **v5 变更（MySQL-only，移除腾讯文档依赖）**：
-> - 时间数据**只写本地 JSONL**（零网络依赖、永不失败），再由**定时任务（每日 12:00 / 18:00）**
+> - 时间数据**只写本地 JSONL**（零网络依赖、永不失败），再由**定时任务（每日 09:00 / 12:00 / 18:00）**
 >   幂等同步到团队共享 **MySQL 数据库**，取代 v1.4.x 的腾讯文档智能表格实时同步。
 > - **彻底移除腾讯文档 cloud 流程**：不再调用 `mcp__tencent-docs__smartsheet.*`、
 >   不再打包 `.aipage` 上传【我的文档】、不再依赖腾讯文档连接器。
@@ -469,7 +469,7 @@ python scripts/generate_time_analytics.py --biz-line "{biz_line}" --format csv
 ### 同步原理
 
 ```
-你反馈时间 → 本地 records.jsonl → 定时任务(每日 12:00 / 18:00) 幂等同步 → 共享 MySQL
+你反馈时间 → 本地 records.jsonl → 定时任务(每日 09:00 / 12:00 / 18:00) 幂等同步 → 共享 MySQL
 ```
 
 - 记录环节只写本地，**零网络依赖、永不失败**；
@@ -568,7 +568,7 @@ python sync_to_mysql.py --biz-line {biz_line}              :: 真实同步（看
 
 ### MySQL 共享数据库（storage_mode=mysql 时）
 
-- 定时任务（每日 12:00 / 18:00）将本地 JSONL 幂等同步到共享库 `agent_time_tracking` 表
+- 定时任务（每日 09:00 / 12:00 / 18:00）将本地 JSONL 幂等同步到共享库 `agent_time_tracking` 表
 - 管理员可用 SQL 查询汇总，或随时说"同步到数据库"触发立即同步
 - 数据以 `record_key` 去重，重复同步不产生重复数据
 

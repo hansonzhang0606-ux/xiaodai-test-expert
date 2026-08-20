@@ -220,7 +220,7 @@ maxTurns: 100
    ```bash
    python scripts/init_mysql_config.py --biz-line 效贷
    ```
-4. 配置定时同步任务（每日 12:00/18:00 调用 `sync_to_mysql.py`）
+4. 配置定时同步任务（每日 09:00/12:00/18:00 调用 `sync_to_mysql.py`；会话启动时 AI 自动注册早/午/晚三任务）
 
 ## 两种执行模式
 
