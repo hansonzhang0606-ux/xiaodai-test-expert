@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-效贷测试专家 - 版本号同步自检脚本
+效贷测试专家 - 版本号同步自检脚本（自动探测路径版）
 用法：
   python check_version_sync.py                  # 只扫本地（工作区 + marketplace 副本 + docs + zip）
   python check_version_sync.py --github         # 本地 + 远程 GitHub 双镜像对比（需 GITHUB_PAT）
   python check_version_sync.py --json           # 输出 JSON 汇总（供 CI/脚本解析）
   python check_version_sync.py --set 1.6.2      # 报告期望版本号（与各位置比对）
+  python check_version_sync.py --workspace <dir> # 显式指定工作区/仓库根目录（覆盖自动探测）
+  python check_version_sync.py --market <dir>   # 显式指定 marketplace 副本目录（覆盖自动探测）
 
 原理：把"当前版本号"应从哪些文件/字段读取列成清单，逐项提取版本号并分组比对。
+路径自动探测（无需改常量，其他电脑可直接复用）：
+  - 工作区/仓库根：脚本位于 <base>/scripts/ 下 → base=上一级；脚本位于 <base>/ 下 → base=脚本目录。
+    以是否存在 xiaodai-testing-expert/ 镜像目录为准。
+  - marketplace 副本：默认 ~/.workbuddy/plugins/marketplaces（不存在则跳过副本组）。
 退出码：0=全部一致；1=存在不一致（缺文件/缺字段/版本不同）。
 """
 import argparse
@@ -18,9 +24,34 @@ import re
 import sys
 import zipfile
 import urllib.request
+from pathlib import Path
 
-WORKSPACE = r'D:\##AI转型\效贷测试专家-WorkBuddy'
-MARKET = r'C:\Users\kingdee\.workbuddy\plugins\marketplaces'
+# ---------------------------------------------------------------
+# 路径自动探测
+# ---------------------------------------------------------------
+
+def detect_base():
+    """自动探测工作区/仓库根目录。
+    规则：脚本在 <base>/scripts/ 下 → base=上一级；脚本在 <base>/ 下 → base=脚本所在目录。
+    以 base 下存在 xiaodai-testing-expert/ 目录为判定标志。"""
+    script_dir = Path(__file__).resolve().parent
+    # 场景1：脚本位于 <base>/scripts/ 下（GitHub 仓库克隆布局）
+    if script_dir.name == 'scripts':
+        cand = script_dir.parent
+        if (cand / 'xiaodai-testing-expert').is_dir():
+            return cand
+    # 场景2：脚本位于 <base>/ 下（本地工作区布局）
+    cand = script_dir
+    if (cand / 'xiaodai-testing-expert').is_dir():
+        return cand
+    return None
+
+
+def detect_market():
+    """自动探测 marketplace 副本目录：~/.workbuddy/plugins/marketplaces"""
+    cand = Path.home() / '.workbuddy' / 'plugins' / 'marketplaces'
+    return cand if cand.is_dir() else None
+
 
 # ---------------------------------------------------------------
 # 版本号提取器：每种文件类型一个函数，返回 (版本号, 说明) 或 None
@@ -87,58 +118,86 @@ def zip_skill_version(path):
 
 
 # ---------------------------------------------------------------
-# 位置清单
+# 位置清单（动态布局识别）
 # ---------------------------------------------------------------
 
-def build_manifest():
-    """返回 [(组名, 位置说明, 版本提取器, 路径)]"""
+SUBS = ['experts/plugins/xiaodai-testing-expert', 'my-experts/plugins/xiaodai-testing-expert',
+        'xiaodai-test-expert-marketplace/plugins/xiaodai-testing-expert',
+        'xiaodai-test-expert-marketplace/xiaodai-testing-expert']
+PROMPTS = ['document_consolidate', 'knowledge_base_archive', 'requirement_review',
+           'testcase_refine', 'testpoint_generate']
+DOCS = ['效贷功能测试专家-测试人员使用指导手册.md', '效贷功能测试专家-管理员指导手册.md']
+
+
+def build_manifest(base, market):
+    """返回 [(组名, 位置说明, 版本提取器, 路径)]
+    布局自适应：本地工作区布局（base/agent.md、base/skills/）与
+    GitHub 仓库克隆布局（base/plugins/xiaodai-testing-expert/、base/xiaodai-testing-expert/）均可。"""
+    base = Path(base)
     m = []
-    mk = lambda g, label, fn, p: m.append((g, label, fn, p))
+    mk = lambda g, label, fn, p: m.append((g, label, fn, str(p)))
+
+    # 识别镜像位置：本地工作区/仓库共用 xiaodai-testing-expert/，仓库额外有 plugins/xiaodai-testing-expert/
+    mirrors = []
+    if (base / 'xiaodai-testing-expert').is_dir():
+        mirrors.append(base / 'xiaodai-testing-expert')
+    if (base / 'plugins' / 'xiaodai-testing-expert').is_dir():
+        mirrors.append(base / 'plugins' / 'xiaodai-testing-expert')
 
     # A. agent 组
-    for label, p in [
-        ('工作区根 agent.md', os.path.join(WORKSPACE, 'agent.md')),
-        ('工作区镜像 agents', os.path.join(WORKSPACE, 'xiaodai-testing-expert', 'agents', 'xiaodai-testing-expert.md')),
-    ]:
-        mk('A.agent', label, agent_version, p)
-    for sub in ['experts/plugins/xiaodai-testing-expert', 'my-experts/plugins/xiaodai-testing-expert',
-                'xiaodai-test-expert-marketplace/plugins/xiaodai-testing-expert',
-                'xiaodai-test-expert-marketplace/xiaodai-testing-expert']:
-        mk('A.agent', '副本 ' + sub, agent_version,
-           os.path.join(MARKET, sub, 'agents', 'xiaodai-testing-expert.md'))
+    if (base / 'agent.md').is_file():
+        mk('A.agent', '工作区根 agent.md', agent_version, base / 'agent.md')
+    for i, mir in enumerate(mirrors):
+        tag = '镜像' if i == 0 else '镜像2(plugins)'
+        mk('A.agent', tag + ' agents', agent_version, mir / 'agents' / 'xiaodai-testing-expert.md')
+    if market:
+        for sub in SUBS:
+            mk('A.agent', '副本 ' + sub, agent_version,
+               Path(market) / sub / 'agents' / 'xiaodai-testing-expert.md')
 
     # B. plugin 组
-    mk('B.plugin', '工作区镜像 plugin.json', plugin_version,
-       os.path.join(WORKSPACE, 'xiaodai-testing-expert', '.codebuddy-plugin', 'plugin.json'))
-    for sub in ['experts/plugins/xiaodai-testing-expert', 'my-experts/plugins/xiaodai-testing-expert',
-                'xiaodai-test-expert-marketplace/plugins/xiaodai-testing-expert',
-                'xiaodai-test-expert-marketplace/xiaodai-testing-expert']:
-        mk('B.plugin', '副本 ' + sub, plugin_version,
-           os.path.join(MARKET, sub, '.codebuddy-plugin', 'plugin.json'))
+    for i, mir in enumerate(mirrors):
+        tag = '镜像' if i == 0 else '镜像2(plugins)'
+        mk('B.plugin', tag + ' plugin.json', plugin_version, mir / '.codebuddy-plugin' / 'plugin.json')
+    if market:
+        for sub in SUBS:
+            mk('B.plugin', '副本 ' + sub, plugin_version,
+               Path(market) / sub / '.codebuddy-plugin' / 'plugin.json')
 
     # C. README 组
-    for label, p in [
-        ('工作区根 README', os.path.join(WORKSPACE, 'README.md')),
-        ('工作区镜像 README', os.path.join(WORKSPACE, 'xiaodai-testing-expert', 'README.md')),
-    ]:
-        mk('C.readme', label, readme_version, p)
+    if (base / 'README.md').is_file():
+        mk('C.readme', '工作区根 README', readme_version, base / 'README.md')
+    for i, mir in enumerate(mirrors):
+        tag = '镜像' if i == 0 else '镜像2(plugins)'
+        mk('C.readme', tag + ' README', readme_version, mir / 'README.md')
 
-    # D. docs 组
-    for sub in ['my-experts/docs', 'xiaodai-test-expert-marketplace/docs']:
-        for doc in ['效贷功能测试专家-测试人员使用指导手册.md', '效贷功能测试专家-管理员指导手册.md']:
-            mk('D.docs', '副本 docs/' + sub.split('/')[0] + '/' + doc, doc_version,
-               os.path.join(MARKET, sub, doc))
+    # D. docs 组（base/docs/ 为仓库克隆布局；marketplace 副本为本地布局）
+    # 仅当手册文件实际存在时才添加（工作区布局的 docs/ 可能只有 images/，无手册）
+    if (base / 'docs').is_dir():
+        for doc in DOCS:
+            p = base / 'docs' / doc
+            if p.is_file():
+                mk('D.docs', 'base/docs/' + doc, doc_version, p)
+    if market:
+        for sub in ['my-experts', 'xiaodai-test-expert-marketplace']:
+            for doc in DOCS:
+                mk('D.docs', '副本 docs/' + sub + '/' + doc, doc_version,
+                   Path(market) / sub / 'docs' / doc)
 
-    # E. prompts 组（工作区 + 镜像）
-    for base in ['skills/ai-testcase-workflow-skill', 'xiaodai-testing-expert/skills/ai-testcase-workflow-skill']:
-        for pr in ['document_consolidate', 'knowledge_base_archive', 'requirement_review',
-                   'testcase_refine', 'testpoint_generate']:
-            mk('E.prompts', base + '/prompts/' + pr, prompt_version,
-               os.path.join(WORKSPACE, base, 'prompts', pr + '.md'))
+    # E. prompts 组
+    prompt_bases = []
+    if (base / 'skills' / 'ai-testcase-workflow-skill').is_dir():
+        prompt_bases.append(('工作区', base / 'skills' / 'ai-testcase-workflow-skill'))
+    for i, mir in enumerate(mirrors):
+        tag = '镜像' if i == 0 else '镜像2(plugins)'
+        prompt_bases.append((tag, mir / 'skills' / 'ai-testcase-workflow-skill'))
+    for tag, pb in prompt_bases:
+        for pr in PROMPTS:
+            mk('E.prompts', tag + ' prompts/' + pr, prompt_version, pb / 'prompts' / (pr + '.md'))
 
     # F. skill/zip 组（独立 v5.x 体系，只报告不参与比对）
-    mk('F.zip', '工作区 time-tracking-skill.zip', zip_skill_version,
-       os.path.join(WORKSPACE, 'time-tracking-skill.zip'))
+    if (base / 'time-tracking-skill.zip').is_file():
+        mk('F.zip', 'time-tracking-skill.zip', zip_skill_version, base / 'time-tracking-skill.zip')
     return m
 
 
@@ -163,7 +222,6 @@ def gh_file_version(repo, path, extractor):
         repo, urllib.parse.quote(path, safe='/'))
     d = gh_get(url)
     raw = base64.b64decode(d['content'])
-    # 写入临时内存对象交给提取器：提取器都走文件路径，这里用临时文件
     import tempfile
     suffix = os.path.splitext(path)[1] or '.tmp'
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False, mode='wb') as f:
@@ -184,9 +242,27 @@ def main():
     ap.add_argument('--github', action='store_true', help='对比 GitHub 双镜像（需 GITHUB_PAT）')
     ap.add_argument('--json', action='store_true', help='输出 JSON 汇总')
     ap.add_argument('--set', metavar='X.Y.Z', help='期望版本号，与各位置比对')
+    ap.add_argument('--workspace', metavar='DIR', help='显式指定工作区/仓库根目录（覆盖自动探测）')
+    ap.add_argument('--market', metavar='DIR', help='显式指定 marketplace 副本目录（覆盖自动探测）')
     args = ap.parse_args()
 
-    manifest = build_manifest()
+    base = Path(args.workspace) if args.workspace else detect_base()
+    if args.market:
+        market = Path(args.market)
+        if not market.is_dir():
+            print('WARNING: 指定 --market 目录不存在: %s（跳过副本组）' % market)
+            market = None
+    else:
+        market = detect_market()
+    if base is None:
+        print('ERROR: 无法自动探测工作区根目录（未找到 xiaodai-testing-expert/ 镜像目录）')
+        print('       请用 --workspace <dir> 显式指定，或把脚本放在 <base>/scripts/ 或 <base>/ 下运行')
+        sys.exit(2)
+    print('工作区/仓库根:', base)
+    print('marketplace 副本:', market if market else '(未找到，跳过副本组)')
+    print()
+
+    manifest = build_manifest(base, market)
     results = []  # (组, 位置, 版本号|None|ERR, 路径)
 
     for g, label, fn, path in manifest:
@@ -237,13 +313,12 @@ def main():
         groups.setdefault(g, []).append((label, v, path))
 
     if args.json:
-        out = {}
+        out = {'base': str(base), 'market': str(market) if market else None}
         for g, items in groups.items():
             out[g] = [{'loc': l, 'version': v} for l, v, _ in items]
         print(json.dumps(out, ensure_ascii=False, indent=1))
         sys.exit(0)
 
-    # 文本输出 + 一致性判定
     expected = args.set
     problems = []
     for g in sorted(groups):
@@ -254,7 +329,6 @@ def main():
             print('   %-58s %s' % (label, v))
             if isinstance(v, str) and v and not v.startswith(('ERR', 'MISSING')):
                 versions.add(v)
-        # 一致性判定：组内非 ERR 版本应统一；若指定 expected 则必须匹配（F.zip 独立 v5.x 体系跳过）
         valid = [v for v in versions if v and not v.startswith(('ERR', 'MISSING'))]
         if g == 'F.zip':
             print('   (独立 v5.x 体系，不参与 agent 版本比对)')
