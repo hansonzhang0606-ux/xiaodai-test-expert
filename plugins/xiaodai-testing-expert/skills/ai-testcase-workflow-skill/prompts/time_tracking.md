@@ -172,17 +172,19 @@ MySQL 配置就绪后，AI **自动检查并注册**本机「定时同步」计�
    ```bash
    schtasks /query /tn "{biz_line}时间同步-午" 2>&1
    ```
-2. **不存在** → AI 自动注册早/午/晚三个每日任务（`<scripts目录>` 换成实际绝对路径）：
+2. **不存在** → AI 自动注册早/午/晚三个每日任务（`<scripts目录>` 换成实际绝对路径；`/tr` 末尾必须传入 `{biz_line}` 参数，让同一份 `sync_task.bat` 按业务线推同一张 MySQL 表，用 `biz_line` 字段区分）：
    ```bat
-   schtasks /create /tn "{biz_line}时间同步-早" /tr "<scripts目录>\sync_task.bat" /sc daily /st 09:00 /f
-   schtasks /create /tn "{biz_line}时间同步-午" /tr "<scripts目录>\sync_task.bat" /sc daily /st 12:00 /f
-   schtasks /create /tn "{biz_line}时间同步-晚" /tr "<scripts目录>\sync_task.bat" /sc daily /st 18:00 /f
+   schtasks /create /tn "{biz_line}时间同步-早" /tr "<scripts目录>\sync_task.bat {biz_line}" /sc daily /st 09:00 /f
+   schtasks /create /tn "{biz_line}时间同步-午" /tr "<scripts目录>\sync_task.bat {biz_line}" /sc daily /st 12:00 /f
+   schtasks /create /tn "{biz_line}时间同步-晚" /tr "<scripts目录>\sync_task.bat {biz_line}" /sc daily /st 18:00 /f
    ```
 3. **已存在** → 跳过，直接进入身份识别。
 4. **注册失败**（权限不足 / schtasks 被禁用）→ 提示测试人员以管理员身份运行注册命令（见 §6 第 2 步手动备选），不阻塞其余流程。
 
 > `sync_task.bat` 已内置 Python 自动探测 + 编码修复（GBK/CRLF），测试人员无需改任何配置；
-> 业务线由 bat 内 `set BIZ_LINE=` 决定（部署时已按业务线写死或需修改，见 bat 顶部注释）。
+> 业务线由 bat 第 1 个参数 `%1` 决定（缺省默认主业务线），注册任务时通过 `/tr` 末尾的 `{biz_line}` 传入（见上方命令）。**多业务线不用再为每个业务线各做一份 bat** —— 同一份 bat 复用，仅任务名与参数不同。
+
+> **v5.5 变更（多业务线支持）**：`sync_task.bat` 由「按业务线写死 `set BIZ_LINE=`」升级为「接收第 1 个参数 `%1` 决定业务线」，定时任务注册命令的 `/tr` 末尾传入 `{biz_line}`，解决多业务线（效贷/小贷/效融/智慧记各子线）需各自维护一份 bat 的问题。
 
 ---
 

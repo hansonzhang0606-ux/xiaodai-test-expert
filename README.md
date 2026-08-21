@@ -16,7 +16,7 @@
 
 ## 专家版本
 
-- **版本**：v1.6.2
+- **版本**：v1.6.3
 - **内置 Skill**：ai-testcase-workflow-skill（7 步测试用例流水线）
 - **身份验证**：会话启动时**实时查询 MySQL `agent_team_roster` 表**做精确匹配（覆盖 7 条业务线：效贷 XD / 泾渭云 JWY / 效融 XR / 小贷 XXD / 智慧记 ZHJ / AI 进销存 AIJXC / 智慧记零售 ZHJLS）
 - **MySQL 初始化**：首次使用由 AI 自动完成（`init_mysql_config.py --auto`），测试人员无需手动执行 CMD
@@ -55,6 +55,8 @@
 各测试人员的工时数据集中存储在共享 MySQL 库（业务线按 `biz_line_code` 区分：XD / JWY / XR / XXD / ZHJ / AIJXC / ZHJLS），管理员可随时拉取合并生成汇总报告。
 
 ## 版本历史
+
+- **v1.6.3**：多业务线时间追踪闭环——① 业务线配置闭环检查：本会话业务线 {biz_line} 确定后（步骤⑨多业务线选择之后）AI 必须确认 time-tracking/{biz_line}/mysql_config.json 真实存在，缺失则立即调用 init_mysql_config.py 生成并校验文件落地才算闭环，修复此前「扫描任一份即可」导致非首条业务线（如效融）配置被跳过、数据无法入库的漏洞；② sync_task.bat 由「按业务线写死 set BIZ_LINE=」升级为「接收第 1 个参数 %1 决定业务线」，定时任务注册命令 /tr 末尾传入 {biz_line}，同一份 bat 复用服务多业务线，彻底去掉硬编码（time-tracking-skill.zip v5.4 → v5.5 重打包）。
 
 - **v1.6.2**：修复时间追踪强制执行漏洞——测试电脑验证发现 v1.6.0 步骤①完成后 AI 跳过"立即向用户收集节省时间"环节，直接展示"下一步"选项。强化为"**立即触发 + 阻塞下一步**"——完成通报后**必须立即触发**时间数据收集，在收齐时间数据前**禁止**展示"下一步选项"或进入下一步骤。变更范围：agent.md 强制约束第 7 条措辞强化；ai-testcase-workflow-skill 5 个步骤 prompts 末尾追加"⚠️ 步骤完成后立即触发时间追踪"硬指令段；time_tracking.md 顶部增加"立即+阻塞"强化措辞（v5.3 → v5.4）。
 - **v1.6.1**：时间追踪 skill 层修复（v5.3 同步）：`sync_task.bat` 修复 Windows 兼容性（GBK 编码 + CRLF 换行 + Python 自动探测 + `%~dp0` 定位），解决计划任务触发的 cmd.exe 用 GBK(936) 读取 UTF-8/LF bat 导致中文乱码、找不到命令、路径找不到的问题；定时任务注册由「人工手动」升级为「AI 自动完成」（会话启动自动注册早/午/晚三任务）。

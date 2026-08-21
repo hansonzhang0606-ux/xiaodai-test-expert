@@ -4,7 +4,8 @@ REM 效贷测试专家 - 时间记录同步到 MySQL
 REM 本文件必须 GBK 编码 + CRLF 换行（schtasks 的 cmd.exe 用 936 读取）
 REM 定时：每天 9:00 / 12:00 / 18:00 各一次（AI 初始化时自动注册）
 REM ============================================================
-set BIZ_LINE=效贷
+set "BIZ_LINE=%1"
+if "%BIZ_LINE%"=="" set "BIZ_LINE=效贷"
 set PYTHONIOENCODING=utf-8
 cd /d "%~dp0"
 

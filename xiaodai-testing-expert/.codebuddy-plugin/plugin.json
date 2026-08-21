@@ -1,67 +1,67 @@
 {
- "name": "xiaodai-testing-expert",
- "version": "1.6.2",
- "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0: user story directory auto-management (D:\\效贷-产品需求\\{编号}-{名称}), cloud sync fix (script-generated JSON forwarded to Tencent Docs), updated defaultInitPrompt and quickPrompts. v1.4.1: HTML analytics report auto-uploaded to Tencent Docs My Documents via aipage/smartpage. v1.4.2: strengthened 'view time-saving stats' workflow to always generate/present/upload HTML report; added step-number prefixes (1/2/4/6) to output files for clear stage identification. v1.4.3: 'view time-saving stats' response now includes local HTML path AND Tencent Docs navigation hint (More > My Files > Task Results). v1.4.4: auto-detect viewer role — testers get personal cumulative report (all stories, all steps) with --person filter; admins get business-line all-testers report; JS filter panel supports queries by employee/step/date(month/quarter/year)/story. v1.5.0: time-saving data sync to MySQL — local JSONL upserted to a shared MySQL table via daily scheduled task (12:00/18:00), with bundled pymysql driver, machine-local config, and idempotent record_key dedup; stats reports read full data from MySQL and are shown locally only — Tencent Docs dependency fully removed (no smartsheet sync, no report upload). v1.5.1: auto-initialize MySQL config on session start — after identity verification, AI checks for local mysql_config.json and calls init_mysql_config.py with --auto/--employee/--biz-line; supports multi-business-line mapping (Xiaodai/Jingweiyun/Xiaodai-loan/Zhihuiji-retail); config already exists is skipped safely; testers no longer need to manually run CMD. v1.5.2: identity verification now queries MySQL agent_team_roster table in real time (no longer reads team_roster.yaml, which becomes an input source pushed to MySQL via sync_roster_to_mysql.py); added scripts/load_roster.py for AI to fetch active members as JSON; session-start order adjusted so MySQL config check precedes roster query. v1.5.3: MySQL init flow changed — when mysql_config.json is missing, AI no longer asks for the DB password in chat; instead it auto-generates a fully-empty config template via init_mysql_config.py --template (all fields blank) plus a mysql_config.notes.md with per-field instructions, and instructs the tester to fill all fields per the notes (or ask admin). Removes the in-chat password prompt entirely. v1.6.0: multi-business-line support (Xiaodai/Xiaodai-loan/Xiaorong, same workflow); knowledge bases separate per line with strict biz_line isolation; reports generated per business line. v1.6.1: time-tracking skill-layer fix (v5.3 sync) — sync_task.bat Windows compatibility fix (GBK encoding + CRLF + Python auto-detect + %~dp0 pathing), resolving scheduled-task cmd.exe reading UTF-8/LF bat as GBK causing mojibake / command-not-found / path-not-found; scheduled-task registration upgraded from manual to AI-auto (three tasks morning/noon/evening auto-registered on session start). v1.6.2: fix time-tracking force-enforcement hole — v1.6.0 verification found the AI skipped the 'collect saved time immediately' step after step ① and went straight to 'next step' options, contradicting mandatory rule #7; rule #7 wording strengthened to 'immediate trigger + block next step' — after the completion report, time data collection must trigger immediately, and showing next-step options or advancing is forbidden until time data is collected (or 'user did not respond' is confirmed); hard-instruction sections appended at the end of the 5 step prompts (document_consolidate/requirement_review/testpoint_generate/testcase_refine/knowledge_base_archive); time_tracking.md top reinforced with 'immediate+block' wording; time-tracking-skill.zip repackaged v5.3 → v5.4. ",
- "author": {
-  "name": "Quality Management Team",
-  "email": "qa@kingdee.com"
- },
- "agents": [
-  "./agents/xiaodai-testing-expert.md"
- ],
- "skills": [
-  "./skills/ai-testcase-workflow-skill"
- ],
- "expertType": "agent",
- "agentName": "xiaodai-testing-expert",
- "displayName": {
-  "en": "Xiaodai Testing Expert",
-  "zh": "效贷测试专家"
- },
- "profession": {
-  "en": "Xiaodai Functional Testing Expert",
-  "zh": "效贷功能测试专家"
- },
- "displayDescription": {
-  "en": "[v1.6.2] Xiaodai testing expert with end-to-end pipeline: requirement consolidation (local directory or Confluence page), review, test point generation, case refinement, knowledge archiving, and mandatory time-saving tracking with team roster. Time-saving data synced to shared MySQL via scheduled tasks; stats reports always generated, presented via preview panel, and local path provided in reply. Output files use step-number prefixes (1/2/4/6) for clear stage identification. v1.5.1: auto-initialize MySQL config on session start — after identity verification, AI checks for local mysql_config.json and calls init_mysql_config.py with --auto/--employee/--biz-line; supports multi-business-line mapping (Xiaodai/Jingweiyun/Xiaodai-loan/Zhihuiji-retail); config already exists is skipped safely; testers no longer need to manually run CMD. v1.5.2: identity verification now queries MySQL agent_team_roster table in real time (no longer reads team_roster.yaml, which becomes an input source pushed to MySQL via sync_roster_to_mysql.py); added scripts/load_roster.py for AI to fetch active members as JSON; session-start order adjusted so MySQL config check precedes roster query. v1.5.3: MySQL init now generates an empty config template via init_mysql_config.py --template (all fields blank) plus a mysql_config.notes.md with per-field instructions; tester fills all fields per the notes (or asks admin), no password asked in chat. Identity verification explicitly queries MySQL agent_team_roster (not the local team_roster.yaml). v1.6.0: multi-business-line support — extended from Xiaodai-only to Xiaodai/Xiaodai-loan/Xiaorong (same workflow); kept the 'Xiaodai Testing Expert' name with generalized opening; on first use the tester picks the business line before MySQL init; knowledge bases are now separate per line (strict biz_line isolation, Xiaodai-loan/Xiaorong vector stores pending admin setup); report filenames/titles generated per business line. v1.6.1: time-tracking skill-layer fix (v5.3 sync) — sync_task.bat Windows compatibility fix (GBK encoding + CRLF + Python auto-detect + %~dp0 pathing), resolving scheduled-task cmd.exe reading UTF-8/LF bat as GBK causing mojibake / command-not-found / path-not-found; scheduled-task registration upgraded from manual to AI-auto (three tasks morning/noon/evening auto-registered on session start). v1.6.2: fix time-tracking force-enforcement hole — v1.6.0 verification found the AI skipped the 'collect saved time immediately' step after step ① and went straight to 'next step' options, contradicting mandatory rule #7; rule #7 wording strengthened to 'immediate trigger + block next step' — after the completion report, time data collection must trigger immediately, and showing next-step options or advancing is forbidden until time data is collected (or 'user did not respond' is confirmed); hard-instruction sections appended at the end of the 5 step prompts (document_consolidate/requirement_review/testpoint_generate/testcase_refine/knowledge_base_archive); time_tracking.md top reinforced with 'immediate+block' wording; time-tracking-skill.zip repackaged v5.3 → v5.4. ",
-  "zh": "【v1.6.2】效贷业务线功能测试专家，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库的端到端流水线。内置花名册盲输入身份验证、强制时间节省追踪（二次确认+MySQL定时同步+用户故事目录自动管理）。节省时间数据由定时任务同步到共享 MySQL，查看统计时强制生成 HTML 报告并在右侧面板展示、回复附本地路径（不再依赖腾讯文档）。各步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤。 v1.5.1：会话启动时自动初始化 MySQL 配置——身份验证通过后，AI 自动检测本机 mysql_config.json 并调用 init_mysql_config.py（--auto/--employee/--biz-line）；支持多业务线映射（效贷/泾渭云/小贷/智慧记零售等）；配置已存在时安全跳过；测试人员无需手动执行 CMD。 v1.5.2：身份识别改为实时查询 MySQL agent_team_roster 表（不再读取 team_roster.yaml，yaml 退化为输入源，经 sync_roster_to_mysql.py 推到 MySQL）；新增 scripts/load_roster.py 供 AI 以 JSON 拉取在职人员；会话启动顺序调整为 MySQL 配置检查先于花名册查询。 v1.5.3：MySQL 初始化流程改造——mysql_config.json 缺失时 AI 不再在对话中索要密码，改为自动调用 init_mysql_config.py --template 生成全空配置模板并生成 mysql_config.notes.md 备注说明（全部字段留空），由测试人员按备注填写全部字段（或找管理员获取）后继续；身份识别明确走 MySQL agent_team_roster 表查询（不读本地 team_roster.yaml）。 v1.6.0：多业务线支持——专家从仅效贷扩展为效贷/小贷/效融三条业务线通用（工作流程一致）；保留「效贷测试专家」名称并泛化开场白；首次无配置时由测试人员选择业务线再初始化 MySQL；知识库改为三业务线各自独立、严格按 biz_line 隔离（小贷/效融向量库待管理员新建）；报告文件名/标题随业务线动态生成。 v1.6.1：时间追踪 skill 层修复（v5.3 同步）——sync_task.bat 修复 Windows 兼容性（GBK 编码 + CRLF 换行 + Python 自动探测 + %~dp0 定位），解决计划任务触发的 cmd.exe 用 GBK(936) 读取 UTF-8/LF bat 导致中文乱码、找不到命令、路径找不到的问题；定时任务注册由「人工手动」升级为「AI 自动完成」（会话启动自动注册早/午/晚三任务）。 v1.6.2：修复时间追踪强制执行漏洞——v1.6.0 测试电脑验证发现步骤①完成后 AI 跳过「立即向用户收集节省时间」环节，直接展示「下一步」选项，与强制约束第 7 条相悖；强化第 7 条措辞为「立即触发 + 阻塞下一步」——完成通报后必须立即触发时间数据收集，在收齐时间数据（或确认「用户未反馈」）前禁止展示「下一步选项」、禁止进入下一步骤；ai-testcase-workflow-skill 5 个步骤 prompts （document_consolidate/requirement_review/testpoint_generate/testcase_refine/knowledge_base_archive）末尾追加「⚠️ 步骤完成后立即触发时间追踪」硬指令段；time_tracking.md 顶部增加「立即+阻塞」强化措辞；time-tracking-skill.zip v5.3 → v5.4 重打包。"
- },
- "avatar": "avatars/expert.png",
- "categoryId": "10-ProjectQuality",
- "defaultInitPrompt": {
-  "zh": "我是【效贷测试专家】，服务于效贷/小贷/效融业务线，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库。请告诉我您的姓名，并说明本次处理的业务线（效贷/小贷/效融），进行人员验证，谢谢！",
-  "en": "I am the Xiaodai Testing Expert, serving the Xiaodai / Xiaodai-loan / Xiaorong business lines. I can help with requirement consolidation (local directory or Confluence page), requirement review, test point generation, case refinement, and knowledge archiving. Please tell me your name and which business line you are working on (Xiaodai / Xiaodai-loan / Xiaorong) for identity verification."
- },
- "tags": [
-  {
-   "en": "Functional Testing",
-   "zh": "功能测试"
+  "name": "xiaodai-testing-expert",
+  "version": "1.6.3",
+  "description": "An AI expert for Xiaodai business line functional testing, powered by ai-testcase-workflow-skill covering the full pipeline from requirement consolidation to knowledge archiving. v1.4.0: user story directory auto-management (D:\\效贷-产品需求\\{编号}-{名称}), cloud sync fix (script-generated JSON forwarded to Tencent Docs), updated defaultInitPrompt and quickPrompts. v1.4.1: HTML analytics report auto-uploaded to Tencent Docs My Documents via aipage/smartpage. v1.4.2: strengthened 'view time-saving stats' workflow to always generate/present/upload HTML report; added step-number prefixes (1/2/4/6) to output files for clear stage identification. v1.4.3: 'view time-saving stats' response now includes local HTML path AND Tencent Docs navigation hint (More > My Files > Task Results). v1.4.4: auto-detect viewer role — testers get personal cumulative report (all stories, all steps) with --person filter; admins get business-line all-testers report; JS filter panel supports queries by employee/step/date(month/quarter/year)/story. v1.5.0: time-saving data sync to MySQL — local JSONL upserted to a shared MySQL table via daily scheduled task (12:00/18:00), with bundled pymysql driver, machine-local config, and idempotent record_key dedup; stats reports read full data from MySQL and are shown locally only — Tencent Docs dependency fully removed (no smartsheet sync, no report upload). v1.5.1: auto-initialize MySQL config on session start — after identity verification, AI checks for local mysql_config.json and calls init_mysql_config.py with --auto/--employee/--biz-line; supports multi-business-line mapping (Xiaodai/Jingweiyun/Xiaodai-loan/Zhihuiji-retail); config already exists is skipped safely; testers no longer need to manually run CMD. v1.5.2: identity verification now queries MySQL agent_team_roster table in real time (no longer reads team_roster.yaml, which becomes an input source pushed to MySQL via sync_roster_to_mysql.py); added scripts/load_roster.py for AI to fetch active members as JSON; session-start order adjusted so MySQL config check precedes roster query. v1.5.3: MySQL init flow changed — when mysql_config.json is missing, AI no longer asks for the DB password in chat; instead it auto-generates a fully-empty config template via init_mysql_config.py --template (all fields blank) plus a mysql_config.notes.md with per-field instructions, and instructs the tester to fill all fields per the notes (or ask admin). Removes the in-chat password prompt entirely. v1.6.0: multi-business-line support (Xiaodai/Xiaodai-loan/Xiaorong, same workflow); knowledge bases separate per line with strict biz_line isolation; reports generated per business line. v1.6.1: time-tracking skill-layer fix (v5.3 sync) — sync_task.bat Windows compatibility fix (GBK encoding + CRLF + Python auto-detect + %~dp0 pathing), resolving scheduled-task cmd.exe reading UTF-8/LF bat as GBK causing mojibake / command-not-found / path-not-found; scheduled-task registration upgraded from manual to AI-auto (three tasks morning/noon/evening auto-registered on session start). v1.6.2: fix time-tracking force-enforcement hole — v1.6.0 verification found the AI skipped the 'collect saved time immediately' step after step ① and went straight to 'next step' options, contradicting mandatory rule #7; rule #7 wording strengthened to 'immediate trigger + block next step' — after the completion report, time data collection must trigger immediately, and showing next-step options or advancing is forbidden until time data is collected (or 'user did not respond' is confirmed); hard-instruction sections appended at the end of the 5 step prompts (document_consolidate/requirement_review/testpoint_generate/testcase_refine/knowledge_base_archive); time_tracking.md top reinforced with 'immediate+block' wording; time-tracking-skill.zip repackaged v5.3 → v5.4.. v1.6.3: multi-business-line time-tracking closure — (1) per-business-line config init gate: after the session business line is determined, AI must verify time-tracking/{biz_line}/mysql_config.json exists; if missing, immediately call init_mysql_config.py to generate it and verify the file landed before proceeding, fixing the earlier 'any-config-exists' shortcut that skipped non-first lines and left their data unsynced; (2) sync_task.bat upgraded from a hardcoded 'set BIZ_LINE=' to accepting the first argument %1, and the schtasks /tr command passes {biz_line}, so one bat serves all business lines without per-line copies.",
+  "author": {
+    "name": "Quality Management Team",
+    "email": "qa@kingdee.com"
   },
-  {
-   "en": "Test Case Workflow",
-   "zh": "用例工作流"
+  "agents": [
+    "./agents/xiaodai-testing-expert.md"
+  ],
+  "skills": [
+    "./skills/ai-testcase-workflow-skill"
+  ],
+  "expertType": "agent",
+  "agentName": "xiaodai-testing-expert",
+  "displayName": {
+    "en": "Xiaodai Testing Expert",
+    "zh": "效贷测试专家"
   },
-  {
-   "en": "Time Tracking",
-   "zh": "时间节省追踪"
-  }
- ],
- "quickPrompts": [
-  {
-   "en": "Help me consolidate the requirement documents in this directory.",
-   "zh": "帮我整理这个需求目录下的文档。"
+  "profession": {
+    "en": "Xiaodai Functional Testing Expert",
+    "zh": "效贷功能测试专家"
   },
-  {
-   "en": "Extract this Confluence page and prepare it for review.",
-   "zh": "提取这个 Confluence 页面内容并整理成需求文档。"
+  "displayDescription": {
+    "en": "[v1.6.3] Xiaodai testing expert with end-to-end pipeline: requirement consolidation (local directory or Confluence page), review, test point generation, case refinement, knowledge archiving, and mandatory time-saving tracking with team roster. Time-saving data synced to shared MySQL via scheduled tasks; stats reports always generated, presented via preview panel, and local path provided in reply. Output files use step-number prefixes (1/2/4/6) for clear stage identification. v1.5.1: auto-initialize MySQL config on session start — after identity verification, AI checks for local mysql_config.json and calls init_mysql_config.py with --auto/--employee/--biz-line; supports multi-business-line mapping (Xiaodai/Jingweiyun/Xiaodai-loan/Zhihuiji-retail); config already exists is skipped safely; testers no longer need to manually run CMD. v1.5.2: identity verification now queries MySQL agent_team_roster table in real time (no longer reads team_roster.yaml, which becomes an input source pushed to MySQL via sync_roster_to_mysql.py); added scripts/load_roster.py for AI to fetch active members as JSON; session-start order adjusted so MySQL config check precedes roster query. v1.5.3: MySQL init now generates an empty config template via init_mysql_config.py --template (all fields blank) plus a mysql_config.notes.md with per-field instructions; tester fills all fields per the notes (or asks admin), no password asked in chat. Identity verification explicitly queries MySQL agent_team_roster (not the local team_roster.yaml). v1.6.0: multi-business-line support — extended from Xiaodai-only to Xiaodai/Xiaodai-loan/Xiaorong (same workflow); kept the 'Xiaodai Testing Expert' name with generalized opening; on first use the tester picks the business line before MySQL init; knowledge bases are now separate per line (strict biz_line isolation, Xiaodai-loan/Xiaorong vector stores pending admin setup); report filenames/titles generated per business line. v1.6.1: time-tracking skill-layer fix (v5.3 sync) — sync_task.bat Windows compatibility fix (GBK encoding + CRLF + Python auto-detect + %~dp0 pathing), resolving scheduled-task cmd.exe reading UTF-8/LF bat as GBK causing mojibake / command-not-found / path-not-found; scheduled-task registration upgraded from manual to AI-auto (three tasks morning/noon/evening auto-registered on session start). v1.6.2: fix time-tracking force-enforcement hole — v1.6.0 verification found the AI skipped the 'collect saved time immediately' step after step ① and went straight to 'next step' options, contradicting mandatory rule #7; rule #7 wording strengthened to 'immediate trigger + block next step' — after the completion report, time data collection must trigger immediately, and showing next-step options or advancing is forbidden until time data is collected (or 'user did not respond' is confirmed); hard-instruction sections appended at the end of the 5 step prompts (document_consolidate/requirement_review/testpoint_generate/testcase_refine/knowledge_base_archive); time_tracking.md top reinforced with 'immediate+block' wording; time-tracking-skill.zip repackaged v5.3 → v5.4.  v1.6.3: multi-business-line time-tracking closure — per-business-line MySQL config init gate (verify time-tracking/{biz_line}/mysql_config.json after business line is determined, generate via init_mysql_config.py and verify it landed); sync_task.bat now takes a %1 business-line argument with the schtasks /tr passing {biz_line}, so one bat serves all lines without per-line copies.",
+    "zh": "【v1.6.3】效贷业务线功能测试专家，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库的端到端流水线。内置花名册盲输入身份验证、强制时间节省追踪（二次确认+MySQL定时同步+用户故事目录自动管理）。节省时间数据由定时任务同步到共享 MySQL，查看统计时强制生成 HTML 报告并在右侧面板展示、回复附本地路径（不再依赖腾讯文档）。各步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤。 v1.5.1：会话启动时自动初始化 MySQL 配置——身份验证通过后，AI 自动检测本机 mysql_config.json 并调用 init_mysql_config.py（--auto/--employee/--biz-line）；支持多业务线映射（效贷/泾渭云/小贷/智慧记零售等）；配置已存在时安全跳过；测试人员无需手动执行 CMD。 v1.5.2：身份识别改为实时查询 MySQL agent_team_roster 表（不再读取 team_roster.yaml，yaml 退化为输入源，经 sync_roster_to_mysql.py 推到 MySQL）；新增 scripts/load_roster.py 供 AI 以 JSON 拉取在职人员；会话启动顺序调整为 MySQL 配置检查先于花名册查询。 v1.5.3：MySQL 初始化流程改造——mysql_config.json 缺失时 AI 不再在对话中索要密码，改为自动调用 init_mysql_config.py --template 生成全空配置模板并生成 mysql_config.notes.md 备注说明（全部字段留空），由测试人员按备注填写全部字段（或找管理员获取）后继续；身份识别明确走 MySQL agent_team_roster 表查询（不读本地 team_roster.yaml）。 v1.6.0：多业务线支持——专家从仅效贷扩展为效贷/小贷/效融三条业务线通用（工作流程一致）；保留「效贷测试专家」名称并泛化开场白；首次无配置时由测试人员选择业务线再初始化 MySQL；知识库改为三业务线各自独立、严格按 biz_line 隔离（小贷/效融向量库待管理员新建）；报告文件名/标题随业务线动态生成。 v1.6.1：时间追踪 skill 层修复（v5.3 同步）——sync_task.bat 修复 Windows 兼容性（GBK 编码 + CRLF 换行 + Python 自动探测 + %~dp0 定位），解决计划任务触发的 cmd.exe 用 GBK(936) 读取 UTF-8/LF bat 导致中文乱码、找不到命令、路径找不到的问题；定时任务注册由「人工手动」升级为「AI 自动完成」（会话启动自动注册早/午/晚三任务）。 v1.6.2：修复时间追踪强制执行漏洞——v1.6.0 测试电脑验证发现步骤①完成后 AI 跳过「立即向用户收集节省时间」环节，直接展示「下一步」选项，与强制约束第 7 条相悖；强化第 7 条措辞为「立即触发 + 阻塞下一步」——完成通报后必须立即触发时间数据收集，在收齐时间数据（或确认「用户未反馈」）前禁止展示「下一步选项」、禁止进入下一步骤；ai-testcase-workflow-skill 5 个步骤 prompts （document_consolidate/requirement_review/testpoint_generate/testcase_refine/knowledge_base_archive）末尾追加「⚠️ 步骤完成后立即触发时间追踪」硬指令段；time_tracking.md 顶部增加「立即+阻塞」强化措辞；time-tracking-skill.zip v5.3 → v5.4 重打包。 v1.6.3：多业务线时间追踪闭环——① 业务线配置闭环检查：业务线 {biz_line} 确定后（步骤⑨多业务线选择之后）AI 必须确认 time-tracking/{biz_line}/mysql_config.json 真实存在，缺失则立即调用 init_mysql_config.py 生成并校验文件落地才算闭环，修复此前「扫描任一份即可」导致非首条业务线（如效融）配置被跳过、数据无法入库的漏洞；② sync_task.bat 由「按业务线写死 set BIZ_LINE=」升级为「接收第 1 个参数 %1 决定业务线」，定时任务注册命令 /tr 末尾传入 {biz_line}，同一份 bat 复用服务多业务线，彻底去掉硬编码。"
   },
-  {
-   "en": "Review this requirement and identify risks and gaps.",
-   "zh": "评审这份需求，指出风险和缺失点。"
+  "avatar": "avatars/expert.png",
+  "categoryId": "10-ProjectQuality",
+  "defaultInitPrompt": {
+    "zh": "我是【效贷测试专家】，服务于效贷/小贷/效融业务线，支持需求整理（本地目录或Confluence页面）、需求评审、测试点生成、用例细化、知识入库。请告诉我您的姓名，并说明本次处理的业务线（效贷/小贷/效融），进行人员验证，谢谢！",
+    "en": "I am the Xiaodai Testing Expert, serving the Xiaodai / Xiaodai-loan / Xiaorong business lines. I can help with requirement consolidation (local directory or Confluence page), requirement review, test point generation, case refinement, and knowledge archiving. Please tell me your name and which business line you are working on (Xiaodai / Xiaodai-loan / Xiaorong) for identity verification."
   },
-  {
-   "en": "Show time-saving analytics for Xiaodai business line.",
-   "zh": "查看时间节省统计"
-  }
- ]
+  "tags": [
+    {
+      "en": "Functional Testing",
+      "zh": "功能测试"
+    },
+    {
+      "en": "Test Case Workflow",
+      "zh": "用例工作流"
+    },
+    {
+      "en": "Time Tracking",
+      "zh": "时间节省追踪"
+    }
+  ],
+  "quickPrompts": [
+    {
+      "en": "Help me consolidate the requirement documents in this directory.",
+      "zh": "帮我整理这个需求目录下的文档。"
+    },
+    {
+      "en": "Extract this Confluence page and prepare it for review.",
+      "zh": "提取这个 Confluence 页面内容并整理成需求文档。"
+    },
+    {
+      "en": "Review this requirement and identify risks and gaps.",
+      "zh": "评审这份需求，指出风险和缺失点。"
+    },
+    {
+      "en": "Show time-saving analytics for Xiaodai business line.",
+      "zh": "查看时间节省统计"
+    }
+  ]
 }

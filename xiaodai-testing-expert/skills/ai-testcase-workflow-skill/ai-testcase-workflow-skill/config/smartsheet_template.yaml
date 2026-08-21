@@ -1,0 +1,104 @@
+# 腾讯文档智能表格模板定义
+# 当 storage_mode 切换为 cloud 时，Agent 通过 tencent-docs skill
+# 读取此模板创建智能表格，创建后将 doc_id 回填到 time_tracking_config.yaml
+
+sheet_name: "效贷时间追踪表"
+
+# 字段定义（按顺序创建）
+fields:
+  - name: "记录时间"
+    type: "datetime"
+    description: "记录创建时间，自动填入"
+
+  - name: "员工姓名"
+    type: "text"
+    description: "从花名册选择的员工姓名"
+    required: true
+
+  - name: "用户故事"
+    type: "text"
+    description: "用户故事名称或ID，如 US-001-贷款审批流程优化"
+    required: true
+
+  - name: "步骤"
+    type: "text"
+    description: "工作流步骤名称，如 文档整理、需求评审等"
+    required: true
+
+  - name: "步骤编码"
+    type: "text"
+    description: "步骤编码：01/02/04/06/07"
+    required: true
+
+  - name: "节省小时数"
+    type: "number"
+    description: "节省的小时数（与人天数二选一或都填）"
+    precision: 1
+
+  - name: "节省人天数"
+    type: "number"
+    description: "节省的人天数（1人天=8小时）"
+    precision: 2
+
+  - name: "折算总小时"
+    type: "number"
+    description: "自动计算：小时数 + 人天数×8"
+    precision: 1
+    formula: true
+
+  - name: "业务线"
+    type: "text"
+    description: "业务线标识，固定为效贷"
+    default: "效贷"
+
+  - name: "备注"
+    type: "text"
+    description: "可选，补充说明"
+
+# 视图配置（智能表格创建后手动或通过API添加）
+views:
+  - name: "全部记录"
+    type: "table"
+    description: "默认表格视图，按时间倒序"
+
+  - name: "按员工统计"
+    type: "chart"
+    chart_type: "bar"
+    group_by: "员工姓名"
+    aggregate: "sum"
+    value_field: "折算总小时"
+    description: "各员工累计节省小时数"
+
+  - name: "按步骤统计"
+    type: "chart"
+    chart_type: "bar"
+    group_by: "步骤"
+    aggregate: "sum"
+    value_field: "折算总小时"
+    description: "各步骤累计节省小时数"
+
+  - name: "按用户故事统计"
+    type: "chart"
+    chart_type: "bar"
+    group_by: "用户故事"
+    aggregate: "sum"
+    value_field: "折算总小时"
+    description: "各用户故事累计节省小时数"
+
+  - name: "按月份趋势"
+    type: "chart"
+    chart_type: "line"
+    group_by: "记录时间"
+    time_granularity: "month"
+    aggregate: "sum"
+    value_field: "折算总小时"
+    description: "月度节省时间趋势"
+
+# 创建流程说明：
+# 1. 管理员连接腾讯文档连接器（tencent-docs）
+# 2. 在专家对话中说"初始化时间追踪表格"
+# 3. Agent 读取此模板，调用 tencent-docs skill 创建智能表格
+# 4. 将返回的 doc_id 和 doc_url 回填到 time_tracking_config.yaml
+# 5. 将 doc_url 分享给全团队成员（查看权限）
+# 6. 将 storage_mode 改为 "cloud"
+# 7. 之后所有员工的记录自动写入此表格
