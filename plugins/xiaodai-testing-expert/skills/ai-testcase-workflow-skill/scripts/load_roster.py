@@ -4,8 +4,7 @@
 实时从 MySQL agent_team_roster 表查询在职人员花名册。
 
 身份识别 / 业务线确认均基于此脚本输出，**不再读取 team_roster.yaml**。
-team_roster.yaml 退化为「输入源」——管理员维护它，再由 sync_roster_to_mysql.py
-推到 MySQL；运行时身份验证一律查 MySQL，保证多副本/多机器部署下花名册永远最新。
+team_roster.yaml 已弃用——人员由管理员直接维护在 MySQL agent_team_roster 表；运行时身份验证一律查 MySQL，保证多副本/多机器部署下花名册永远最新。
 
 用法:
   python load_roster.py                  # 人类阅读格式

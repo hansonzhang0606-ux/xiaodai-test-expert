@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试人员花名册同步到 MySQL（agent_team_roster 表）
+【DEPRECATED 已弃用】花名册同步脚本（原：读 team_roster.yaml → upsert 到 MySQL agent_team_roster）
 
-读取 config/team_roster.yaml（唯一数据源），把成员按业务线展开后幂等 upsert 到
+⚠️ 本脚本已弃用：自 v1.5.2 起 team_roster.yaml 不再作为数据源，花名册人员由管理员**直接维护在 MySQL agent_team_roster 表**（INSERT/UPDATE）。误运行本脚本不会改动 MySQL 数据（空 members 时仅打印「没有需要同步的成员」）。
+
+（旧逻辑，仅供回顾）读取 config/team_roster.yaml（原唯一数据源），把成员按业务线展开后幂等 upsert 到
 MySQL 的 agent_team_roster 表（跨业务线共享，供效能平台身份验证/汇总使用）。
 
 表结构约定（唯一键 uk_biz_name = (biz_line, name)）：
@@ -50,7 +52,7 @@ def get_skill_dir():
 
 
 def load_team_roster():
-    """加载花名册（config/team_roster.yaml），复用 record_time_saved 的简易解析兜底"""
+    """加载花名册（config/team_roster.yaml，已弃用——人员改存 MySQL agent_team_roster 表），复用 record_time_saved 的简易解析兜底"""
     roster_path = os.path.join(get_skill_dir(), "config", "team_roster.yaml")
     if not os.path.exists(roster_path):
         print(f"ERROR: 花名册不存在: {roster_path}", file=sys.stderr)

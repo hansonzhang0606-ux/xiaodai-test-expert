@@ -35,8 +35,7 @@
 >   脚本写出全部字段（host/port/user/password/database/table/charset/biz_line/biz_line_code）且值均为空，并同时生成 `mysql_config.notes.md` 备注说明文件；
 >   AI 告知测试人员配置文件路径与备注说明，由其在本地文件按备注填写全部字段（或找管理员获取）并回复「已填好」后继续。彻底移除对话输密码环节。
 > - **v1.5.2 变更**：**身份识别从「读取 `config/team_roster.yaml`」改为「实时查询 MySQL
->   `agent_team_roster` 表」**。`team_roster.yaml` 退化为「输入源」，管理员维护后通过
->   `sync_roster_to_mysql.py` 推到 MySQL；新增 `scripts/load_roster.py`（`--json` 输出
+>   `agent_team_roster` 表」**。`team_roster.yaml` 已弃用，人员由管理员直接维护在 MySQL `agent_team_roster` 表；新增 `scripts/load_roster.py`（`--json` 输出
 >   机器可读结果），AI 会话启动直接调用。会话启动顺序调整：MySQL 配置检查（§3）提前到
 >   身份识别（§2）之前——先有连接再查花名册。`record_time_saved.py` 校验也同步从 yaml 迁到 MySQL。
 > - 查看统计时**从本地 JSONL 读取**（最完整、最实时），生成 HTML 报告并展示
@@ -47,8 +46,7 @@
 ## 一、会话启动：身份识别（必做）+ MySQL 初始化状态检查
 
 > **v1.5.2 关键变更**：身份识别从「读取 `config/team_roster.yaml`」改为
-> **「实时查询 MySQL `agent_team_roster` 表」**。`team_roster.yaml` 退化为
-> 「输入源」（管理员维护 → `sync_roster_to_mysql.py` 推到 MySQL），运行时身份验证一律查 MySQL。
+> **「实时查询 MySQL `agent_team_roster` 表」**。`team_roster.yaml` 已弃用（人员由管理员直接维护在 MySQL `agent_team_roster` 表），运行时身份验证一律查 MySQL。
 > MySQL 配置检查因此必须提前到花名册查询之前（先有连接再查花名册）。
 
 ### 1. MySQL 初始化状态检查（必须先做）
@@ -59,7 +57,7 @@
 
 每次新会话开始时，**第一步必须**（在 MySQL 配置就绪后）实时查询 MySQL 花名册并确认员工身份：
 
-1. **调用花名册查询脚本，实时查询 MySQL `agent_team_roster` 表**（机器可读 JSON，**禁止读本地 `team_roster.yaml`**；后者仅管理员维护的输入源，经 `sync_roster_to_mysql.py` 推到 MySQL）：
+1. **调用花名册查询脚本，实时查询 MySQL `agent_team_roster` 表**（机器可读 JSON，**禁止读本地 `team_roster.yaml`**；后者已弃用，人员由管理员直接维护在 MySQL agent_team_roster 表）：
 
    ```bash
    python scripts/load_roster.py --json
@@ -96,7 +94,7 @@
 
    ```
    ❌ 抱歉，"{输入名}"不在测试团队花名册中，你无法使用本助手。
-      如需开通权限，请联系管理员通过 sync_roster_to_mysql.py 补登到 agent_team_roster 表。
+      如需开通权限，请联系管理员直接 INSERT/UPDATE `agent_team_roster` 表。
    ```
 
    **不提供"仍以该姓名继续"的选项**，直接终止，不执行任何后续操作。
@@ -105,7 +103,7 @@
 > - 不展示人员列表 → 防止信息泄露
 > - 精确匹配 → 防止模糊猜测
 > - 无 fallback → 只有花名册内人员可用
-> - 管理员通过修改 `config/team_roster.yaml` → 运行 `sync_roster_to_mysql.py` 控制访问权限
+> - 管理员通过直接 UPDATE MySQL `agent_team_roster` 表控制访问权限
 
 > 身份确认后，整个会话的所有时间记录自动使用该姓名和业务线，无需重复输入。
 

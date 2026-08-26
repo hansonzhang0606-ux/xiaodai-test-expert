@@ -39,7 +39,7 @@
 
 - 会话启动时，AI 先检查本机 MySQL 配置，再**实时查询 `agent_team_roster` 表**获取在职人员名单，对用户输入姓名做精确匹配。
 - 仅花名册内**在职**人员可使用；匹配失败直接终止服务，不提供 fallback 选项。
-- 花名册由管理员维护 `team_roster.yaml`（输入源），通过 `sync_roster_to_mysql.py` 幂等同步到 MySQL，多副本 / 多机器部署下始终最新。
+- 花名册人员由管理员直接在 MySQL `agent_team_roster` 表中维护（INSERT/UPDATE），运行时实时查询该表（`sync_roster_to_mysql.py` 已弃用），多副本 / 多机器部署下始终最新。
 
 ## 时间节省追踪
 

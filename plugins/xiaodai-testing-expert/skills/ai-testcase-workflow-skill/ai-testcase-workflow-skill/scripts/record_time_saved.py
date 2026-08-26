@@ -181,7 +181,7 @@ def record(
         elif not valid and status == "不在花名册中":
             print(f"⚠️  警告：员工 '{employee}' 不在花名册中。", file=sys.stderr)
             print(f"   花名册在职人员：{', '.join(m['name'] for m in load_team_roster().get('members', []) if m.get('active', True))}", file=sys.stderr)
-            print(f"   如确为此员工，请联系管理员通过 sync_roster_to_mysql.py 补登到 agent_team_roster 表。", file=sys.stderr)
+            print(f"   如确为此员工，请联系管理员直接 INSERT/UPDATE `agent_team_roster` 表。", file=sys.stderr)
             print(f"   本次记录仍会保存，但建议核实。", file=sys.stderr)
         elif not valid and status == "已离职/停用":
             print(f"⚠️  警告：员工 '{employee}' 在花名册中标记为停用。", file=sys.stderr)
