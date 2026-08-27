@@ -147,17 +147,23 @@ def upsert_record(conn, table, record, biz_line, biz_line_code):
     sql = f"""
         INSERT INTO {table}
             (record_key, timestamp, date, biz_line, biz_line_code, employee, user_story,
-             user_story_code, step, step_code, time_saved_hours, time_saved_pd, total_hours, remark)
+             user_story_code, step, step_code, time_saved_hours, time_saved_pd, total_hours,
+             agent_start_time, agent_end_time, agent_duration_minutes, remark)
         VALUES (%(record_key)s, %(timestamp)s, %(date)s, %(biz_line)s, %(biz_line_code)s,
                 %(employee)s, %(user_story)s, %(user_story_code)s, %(step)s, %(step_code)s,
-                %(time_saved_hours)s, %(time_saved_pd)s, %(total_hours)s, %(remark)s)
+                %(time_saved_hours)s, %(time_saved_pd)s, %(total_hours)s,
+                %(agent_start_time)s, %(agent_end_time)s, %(agent_duration_minutes)s, %(remark)s)
         ON DUPLICATE KEY UPDATE
             timestamp=VALUES(timestamp), date=VALUES(date),
             user_story=VALUES(user_story), user_story_code=VALUES(user_story_code),
             step=VALUES(step), step_code=VALUES(step_code),
             time_saved_hours=VALUES(time_saved_hours),
             time_saved_pd=VALUES(time_saved_pd),
-            total_hours=VALUES(total_hours), remark=VALUES(remark)
+            total_hours=VALUES(total_hours),
+            agent_start_time=VALUES(agent_start_time),
+            agent_end_time=VALUES(agent_end_time),
+            agent_duration_minutes=VALUES(agent_duration_minutes),
+            remark=VALUES(remark)
     """
     params = {
         "record_key": record_key,
@@ -173,6 +179,9 @@ def upsert_record(conn, table, record, biz_line, biz_line_code):
         "time_saved_hours": float(record.get("time_saved_hours", 0)),
         "time_saved_pd": float(record.get("time_saved_pd", 0)),
         "total_hours": float(record.get("total_hours", 0)),
+        "agent_start_time": normalize_timestamp(record.get("agent_start_time")),
+        "agent_end_time": normalize_timestamp(record.get("agent_end_time")),
+        "agent_duration_minutes": float(record.get("agent_duration_minutes")) if record.get("agent_duration_minutes") not in (None, "") else None,
         "remark": record.get("remark", ""),
     }
     with conn.cursor() as cur:

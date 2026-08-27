@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-效贷测试专家 — 时间节省数据同步到 MySQL（WorkBuddy 版）
+时间节省数据同步到 MySQL（通用多业务线版）
 
 读取本地 JSONL 记录，幂等 upsert 到 MySQL 的 agent_time_tracking 表。
 pymysql 已打包进本脚本同目录（scripts/pymysql/），无需 pip install，离线可用。
 
 用法:
-  python sync_to_mysql.py                 # 同步效贷业务线
-  python sync_to_mysql.py --biz-line 效贷  # 指定业务线
+  python sync_to_mysql.py                 # 同步 config 中 default_biz_line 指定的业务线
+  python sync_to_mysql.py --biz-line 智慧记+运营系统  # 指定业务线
   python sync_to_mysql.py --since 2026-08-17  # 只同步该日期及之后的记录
   python sync_to_mysql.py --dry-run       # 试运行，只看不写
 
@@ -31,6 +31,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if os.path.isdir(os.path.join(SCRIPT_DIR, "pymysql")):
     sys.path.insert(0, SCRIPT_DIR)
 
+from biz_line_helper import resolve_biz_line
+
 try:
     import pymysql
     import pymysql.cursors
@@ -38,16 +40,8 @@ except ImportError:
     print("ERROR: pymysql 未打包进脚本目录。请确认 scripts/pymysql/ 存在。", file=sys.stderr)
     sys.exit(1)
 
-# 业务线中文名 -> 编码（与 init_mysql.sql 注释一致）
-BIZ_LINE_CODE_MAP = {
-    "效贷": "XD",
-    "泾渭云": "JWY",
-    "效融": "XR",
-    "小贷": "XXD",
-    "智慧记+运营系统": "ZHJ",
-    "AI进销存": "AIJXC",
-    "智慧记零售": "ZHJLS",
-}
+# 业务线中文名 -> 编码（与 init_mysql.sql 注释一致，统一维护在 biz_line_helper.py）
+from biz_line_helper import BIZ_LINE_CODE_MAP as BIZ_LINE_CODE_MAP
 
 HOME = os.path.expanduser("~")
 
@@ -143,7 +137,7 @@ def read_jsonl_records(biz_line):
     return records
 
 
-def upsert_record(conn, table, record, biz_line_code):
+def upsert_record(conn, table, record, biz_line, biz_line_code):
     """幂等 upsert 一条记录（record_key 唯一键兜底）"""
     record_key = compute_record_key(record, biz_line_code)
     user_story_code = extract_user_story_code(record)
@@ -153,23 +147,29 @@ def upsert_record(conn, table, record, biz_line_code):
     sql = f"""
         INSERT INTO {table}
             (record_key, timestamp, date, biz_line, biz_line_code, employee, user_story,
-             user_story_code, step, step_code, time_saved_hours, time_saved_pd, total_hours, remark)
+             user_story_code, step, step_code, time_saved_hours, time_saved_pd, total_hours,
+             agent_start_time, agent_end_time, agent_duration_minutes, remark)
         VALUES (%(record_key)s, %(timestamp)s, %(date)s, %(biz_line)s, %(biz_line_code)s,
                 %(employee)s, %(user_story)s, %(user_story_code)s, %(step)s, %(step_code)s,
-                %(time_saved_hours)s, %(time_saved_pd)s, %(total_hours)s, %(remark)s)
+                %(time_saved_hours)s, %(time_saved_pd)s, %(total_hours)s,
+                %(agent_start_time)s, %(agent_end_time)s, %(agent_duration_minutes)s, %(remark)s)
         ON DUPLICATE KEY UPDATE
             timestamp=VALUES(timestamp), date=VALUES(date),
             user_story=VALUES(user_story), user_story_code=VALUES(user_story_code),
             step=VALUES(step), step_code=VALUES(step_code),
             time_saved_hours=VALUES(time_saved_hours),
             time_saved_pd=VALUES(time_saved_pd),
-            total_hours=VALUES(total_hours), remark=VALUES(remark)
+            total_hours=VALUES(total_hours),
+            agent_start_time=VALUES(agent_start_time),
+            agent_end_time=VALUES(agent_end_time),
+            agent_duration_minutes=VALUES(agent_duration_minutes),
+            remark=VALUES(remark)
     """
     params = {
         "record_key": record_key,
         "timestamp": ts,
         "date": date_val,
-        "biz_line": record.get("biz_line", "") or "效贷",
+        "biz_line": record.get("biz_line", "") or biz_line,
         "biz_line_code": biz_line_code,
         "employee": record.get("employee", ""),
         "user_story": record.get("user_story", ""),
@@ -179,6 +179,9 @@ def upsert_record(conn, table, record, biz_line_code):
         "time_saved_hours": float(record.get("time_saved_hours", 0)),
         "time_saved_pd": float(record.get("time_saved_pd", 0)),
         "total_hours": float(record.get("total_hours", 0)),
+        "agent_start_time": normalize_timestamp(record.get("agent_start_time")),
+        "agent_end_time": normalize_timestamp(record.get("agent_end_time")),
+        "agent_duration_minutes": float(record.get("agent_duration_minutes")) if record.get("agent_duration_minutes") not in (None, "") else None,
         "remark": record.get("remark", ""),
     }
     with conn.cursor() as cur:
@@ -186,14 +189,17 @@ def upsert_record(conn, table, record, biz_line_code):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="时间节省数据同步到 MySQL（WorkBuddy 版）")
-    parser.add_argument("--biz-line", default="效贷", help="业务线（默认：效贷）")
+    parser = argparse.ArgumentParser(description="时间节省数据同步到 MySQL（通用多业务线版）")
+    parser.add_argument("--biz-line", default="", help="业务线（未指定时读取 config 中 default_biz_line）")
     parser.add_argument("--since", default="", help="只同步该日期及之后的记录（YYYY-MM-DD）")
     parser.add_argument("--dry-run", action="store_true", help="试运行，只看不写")
     args = parser.parse_args()
 
-    biz_line = args.biz_line
-    biz_line_code = BIZ_LINE_CODE_MAP.get(biz_line, "XD")
+    biz_line = resolve_biz_line(args.biz_line)
+    biz_line_code = BIZ_LINE_CODE_MAP.get(biz_line, "")
+    if not biz_line_code:
+        print(f"⚠️  业务线 '{biz_line}' 无预置编码（将写入空编码）。", file=sys.stderr)
+        print(f"   已知编码映射: {BIZ_LINE_CODE_MAP}", file=sys.stderr)
 
     records = read_jsonl_records(biz_line)
     if args.since:
@@ -228,7 +234,7 @@ def main():
     fail = 0
     for r in records:
         try:
-            upsert_record(conn, table, r, biz_line_code)
+            upsert_record(conn, table, r, biz_line, biz_line_code)
             ok += 1
             print(f"  ✅ {r.get('date')} | {r.get('employee')} | {r.get('step_code')} "
                   f"{r.get('step')} | {r.get('total_hours')}h")

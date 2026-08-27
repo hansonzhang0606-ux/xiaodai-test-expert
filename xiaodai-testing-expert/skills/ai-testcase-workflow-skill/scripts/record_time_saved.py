@@ -20,6 +20,9 @@ v3 改进:
     --step-code "01" \
     --hours 4.0 \
     --biz-line "智慧记+运营系统" \
+    --agent-start-time "2026-08-27T09:05:00+08:00" \
+    --agent-end-time "2026-08-27T09:17:30+08:00" \
+    --agent-duration-minutes 12.5 \
     --remark "原本需要手动整理5个文档"
 
   # 也可以用人天为单位输入，脚本自动换算为小时存储
@@ -166,6 +169,9 @@ def record(
     person_days: float = None,
     biz_line: str = "",
     remark: str = "",
+    agent_start_time: str = "",
+    agent_end_time: str = "",
+    agent_duration_minutes: float = None,
     skip_validation: bool = False,
 ):
     """记录一条时间节省数据（biz_line 未指定时自动从配置解析）"""
@@ -224,6 +230,9 @@ def record(
         "time_saved_hours": time_hours,
         "time_saved_pd": time_pd,
         "total_hours": total_hours,
+        "agent_start_time": agent_start_time or "",
+        "agent_end_time": agent_end_time or "",
+        "agent_duration_minutes": float(agent_duration_minutes) if agent_duration_minutes is not None else None,
         "remark": remark,
     }
 
@@ -247,6 +256,8 @@ def record(
     print(f"   步骤: {step} ({step_code})")
     print(f"   节省时间: {time_pd} 人天（{time_hours} 小时）")
     print(f"   存储单位: 小时（{total_hours}h）")
+    if agent_start_time and agent_end_time:
+        print(f"   智能体执行: {agent_start_time} → {agent_end_time}（{agent_duration_minutes} 分钟）")
     print(f"   业务线: {biz_line}")
     if ref_str:
         print(ref_str, end="")
@@ -317,6 +328,9 @@ def main():
     parser.add_argument("--person-days", type=float, default=None, help="节省时间（人天）")
     parser.add_argument("--biz-line", default="", help="业务线（未指定时读取 config 中 default_biz_line）")
     parser.add_argument("--remark", default="", help="备注")
+    parser.add_argument("--agent-start-time", default="", help="智能体开始处理本步骤的 ISO 时间戳（如 2026-08-27T09:05:00+08:00）")
+    parser.add_argument("--agent-end-time", default="", help="智能体完成本步骤的 ISO 时间戳（如 2026-08-27T09:17:30+08:00）")
+    parser.add_argument("--agent-duration-minutes", type=float, default=None, help="智能体实际执行耗时（分钟）")
     parser.add_argument("--skip-validation", action="store_true", help="跳过花名册校验")
 
     args = parser.parse_args()
@@ -334,6 +348,9 @@ def main():
         person_days=args.person_days,
         biz_line=args.biz_line,
         remark=args.remark,
+        agent_start_time=args.agent_start_time,
+        agent_end_time=args.agent_end_time,
+        agent_duration_minutes=args.agent_duration_minutes,
         skip_validation=args.skip_validation,
     )
 
