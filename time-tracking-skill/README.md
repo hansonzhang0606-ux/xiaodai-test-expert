@@ -187,4 +187,5 @@ time-tracking-skill/
 - v5.4：强化「立即触发 + 阻塞下一步」——修复实际测试中步骤完成后 AI 跳过时间收集、直接展示「下一步」选项的问题；5 个环节产出交付后必须先完成时间收集（通报 → 询问 → 解析 → 二次确认 → 写本地 JSONL），确认记录完成后才允许展示下一步选项
 - v5.6：team_roster.yaml 的 members 名单清空（运行时身份识别早已迁至 MySQL `agent_team_roster`，yaml 不再作为数据源）；同步将全部文档/脚本中「改 yaml → `sync_roster_to_mysql.py` 推 MySQL」的维护口径统一改为「管理员直接 INSERT/UPDATE MySQL `agent_team_roster` 表」，并给 `sync_roster_to_mysql.py` 加【已弃用】提示（误运行不改动 MySQL 数据）；zip 内嵌的 team_roster.yaml 随之更新为空 members。
 - v5.7：时间记录增加 `agent_start_time` / `agent_end_time` / `agent_duration_minutes` 三个字段，`record_time_saved.py` 新增对应 CLI 参数，`sync_to_mysql.py` 在 upsert 时同步写入 MySQL `agent_time_tracking` 表，解决表中该三字段长期为 NULL 的问题；`prompts/time_tracking.md` 明确要求 AI 在步骤开始/结束时采集智能体执行耗时并传入脚本。
+- v5.8：定时任务自动注册从「提示词内联 3 条带 `<scripts目录>` 占位符的 schtasks 命令（模型无法可靠填出路径，导致其他电脑/测试人员从未真正建出任务）」改为**确定性脚本调用** `python scripts/register_sync_tasks.py --biz-line {biz_line}`；新增 `scripts/register_sync_tasks.py`（用 `__file__` 自定位 `sync_task.bat`、按业务线幂等注册 早/午/晚 三任务、注册失败给明确提示），彻底解决跨机器自动建任务的根因；注册时机从「MySQL 配置就绪后」提前到「业务线确定后」。
 - 抽取日期：2026-08-18
