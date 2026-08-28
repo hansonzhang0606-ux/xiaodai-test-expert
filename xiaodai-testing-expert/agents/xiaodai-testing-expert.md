@@ -1,6 +1,6 @@
 ---
 name: xiaodai-testing-expert
-description: "效贷业务线功能测试专家，内置 ai-testcase-workflow-skill，提供从需求整理到知识入库的端到端测试用例工作流。v1.3.4：新增 Confluence 页面提取作为步骤①轻量替代入口，与本地目录整理并行；花名册盲输入身份验证 + 强制时间追踪 + 二次确认 + Excel/GitHub集中存储。v1.3.5：修复 plugin.json 元数据，确保安装后可在专家列表正常显示。v1.3.6：修复注册脚本，新增 my-experts 市场复制步骤。v1.3.7：优化 defaultInitPrompt 为完整欢迎语+身份验证引导，新增步骤①入口主动提示规则。v1.3.8：工时数据存储改为腾讯文档智能表格（cloud模式），测试人员不再需要GitHub账号/PAT。v1.4.0：新增用户故事目录自动管理；修复 cloud 同步字段构造问题；displayDescription 增加版本号前缀；quickPrompts 恢复 4 条功能入口。v1.4.1：HTML 时间节省分析报告自动生成并上传腾讯文档【我的文档】，测试人员可随时在线打开。v1.4.2：强化"查看时间节省统计"必生成、必展示、必上传的强制校验；步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤。v1.4.3：「查看时间节省统计」回复同步告知本地 HTML 完整路径与腾讯文档导航路径（更多 > 我的文件 > 任务成果）。v1.4.4：自动识别查看者角色 — 测试人员生成个人视角报告（`--person` 筛选，跨所有故事/步骤），管理员生成业务线全量报告；HTML 报告内置 JS 筛选面板，支持按员工/步骤/日期（月/季度/年）/故事名称查询。v1.5.0：时间节省数据同步 MySQL——本地 JSONL 经每日定时任务（12:00/18:00）幂等 upsert 到共享 MySQL 表，内置 pymysql 驱动、机器本地凭证、record_key 幂等去重；查看统计从 MySQL 读取全量数据生成 HTML 报告，彻底移除腾讯文档依赖（不再实时同步智能表格、不再上传报告到【我的文档】）。v1.5.1：会话启动时自动检查并初始化 MySQL 本地配置——AI 根据已验证的员工姓名和当前业务线自动调用 init_mysql_config.py，生成对应业务线目录（如 time-tracking/效贷、time-tracking/泾渭云等），测试人员无需手动执行 CMD；init_mysql_config.py 支持多业务线与 --auto/--employee 参数，配置已存在时安全跳过。v1.5.2：**身份识别从读 team_roster.yaml 改为实时查 MySQL agent_team_roster 表**——team_roster.yaml 退化为「输入源」（管理员维护后通过 sync_roster_to_mysql.py 推到 MySQL），多副本/多机器部署下花名册永远最新；新增 scripts/load_roster.py 给 AI 用 JSON 形式拉取在职人员；会话启动顺序调整：MySQL 配置检查提前到花名册查询之前；record_time_saved.py 校验也同步从 yaml 迁到 MySQL。v1.5.3：MySQL 初始化流程改造——会话启动时若 mysql_config.json 缺失，AI 不再在对话中索要密码，改为自动调用 init_mysql_config.py --template 生成**全空配置模板**（host/port/user/password/database/table/charset/biz_line/biz_line_code 全部留空）并生成 mysql_config.notes.md 备注说明，提示测试人员按备注填写全部字段（或找管理员获取）后回复「已填好」再继续；身份识别明确走 MySQL agent_team_roster 表查询（不读本地 team_roster.yaml）；彻底移除对话输密码环节。v1.6.0：多业务线支持——专家从仅效贷扩展为效贷/小贷/效融三条业务线通用（工作流程一致）；保留「效贷测试专家」名称并泛化开场白与人格描述；首次无配置时由测试人员选择业务线再初始化；知识库改为三业务线各自独立、严格按 biz_line 隔离；报告文件名/标题随业务线动态生成。v1.6.1：时间追踪 skill 层修复（v5.3 同步）——sync_task.bat 修复 Windows 兼容性（GBK 编码 + CRLF 换行 + Python 自动探测 + %~dp0 定位），解决计划任务触发的 cmd.exe 用 GBK(936) 读取 UTF-8/LF bat 导致中文乱码、找不到命令、路径找不到的问题；定时任务注册由「人工手动」升级为「AI 自动完成」（会话启动自动注册早/午/晚三任务）。v1.6.2：修复时间追踪强制执行漏洞——v1.6.0 测试电脑验证发现步骤①完成后 AI 跳过"立即向用户收集节省时间"环节，直接展示"下一步"选项"（进②或进④），与 agent 强制约束第 7 条"必须收时间"规则相悖；强化第 7 条措辞为"**立即触发 + 阻塞下一步**"——完成通报后必须立即触发时间数据收集，在时间数据收齐（或确认"用户未反馈"）之前**禁止**展示"下一步选项"、**禁止**进入下一步骤；在 ai-testcase-workflow-skill 5 个步骤 prompts（document_consolidate/requirement_review/testpoint_generate/testcase_refine/knowledge_base_archive）末尾追加"⚠️ 步骤完成后立即触发时间追踪"硬指令段；time_tracking.md 顶部增加"立即+阻塞"强化措辞；time-tracking-skill.zip v5.3 → v5.4 重打包（prompts 措辞强化属 skill 行为变化）。v1.6.3：多业务线时间追踪闭环——① 业务线配置闭环检查：本会话业务线 {biz_line} 确定后（步骤⑨多业务线选择之后）AI 必须确认 time-tracking/{biz_line}/mysql_config.json 真实存在，缺失则立即调用 init_mysql_config.py 生成并校验文件落地才算闭环，修复此前「扫描任一份即可」导致非首条业务线（如效融）配置被跳过、数据无法入库的漏洞；② sync_task.bat 由「按业务线写死 set BIZ_LINE=」升级为「接收第 1 个参数 %1 决定业务线」，定时任务注册命令 /tr 末尾传入 {biz_line}，同一份 bat 复用服务多业务线，彻底去掉硬编码。"
+description: "效贷业务线功能测试专家，内置 ai-testcase-workflow-skill，提供从需求整理到知识入库的端到端测试用例工作流。v1.3.4：新增 Confluence 页面提取作为步骤①轻量替代入口，与本地目录整理并行；花名册盲输入身份验证 + 强制时间追踪 + 二次确认 + Excel/GitHub集中存储。v1.3.5：修复 plugin.json 元数据，确保安装后可在专家列表正常显示。v1.3.6：修复注册脚本，新增 my-experts 市场复制步骤。v1.3.7：优化 defaultInitPrompt 为完整欢迎语+身份验证引导，新增步骤①入口主动提示规则。v1.3.8：工时数据存储改为腾讯文档智能表格（cloud模式），测试人员不再需要GitHub账号/PAT。v1.4.0：新增用户故事目录自动管理；修复 cloud 同步字段构造问题；displayDescription 增加版本号前缀；quickPrompts 恢复 4 条功能入口。v1.4.1：HTML 时间节省分析报告自动生成并上传腾讯文档【我的文档】，测试人员可随时在线打开。v1.4.2：强化"查看时间节省统计"必生成、必展示、必上传的强制校验；步骤产出文件统一添加步骤数字前缀（1/2/4/6），便于识别文件归属步骤。v1.4.3：「查看时间节省统计」回复同步告知本地 HTML 完整路径与腾讯文档导航路径（更多 > 我的文件 > 任务成果）。v1.4.4：自动识别查看者角色 — 测试人员生成个人视角报告（`--person` 筛选，跨所有故事/步骤），管理员生成业务线全量报告；HTML 报告内置 JS 筛选面板，支持按员工/步骤/日期（月/季度/年）/故事名称查询。v1.5.0：时间节省数据同步 MySQL——本地 JSONL 经每日定时任务（12:00/18:00）幂等 upsert 到共享 MySQL 表，内置 pymysql 驱动、机器本地凭证、record_key 幂等去重；查看统计从 MySQL 读取全量数据生成 HTML 报告，彻底移除腾讯文档依赖（不再实时同步智能表格、不再上传报告到【我的文档】）。v1.5.1：会话启动时自动检查并初始化 MySQL 本地配置——AI 根据已验证的员工姓名和当前业务线自动调用 init_mysql_config.py，生成对应业务线目录（如 time-tracking/效贷、time-tracking/泾渭云等），测试人员无需手动执行 CMD；init_mysql_config.py 支持多业务线与 --auto/--employee 参数，配置已存在时安全跳过。v1.5.2：**身份识别从读 team_roster.yaml 改为实时查 MySQL agent_team_roster 表**——team_roster.yaml 退化为「输入源」（管理员维护后通过 sync_roster_to_mysql.py 推到 MySQL），多副本/多机器部署下花名册永远最新；新增 scripts/load_roster.py 给 AI 用 JSON 形式拉取在职人员；会话启动顺序调整：MySQL 配置检查提前到花名册查询之前；record_time_saved.py 校验也同步从 yaml 迁到 MySQL。v1.5.3：MySQL 初始化流程改造——会话启动时若 mysql_config.json 缺失，AI 不再在对话中索要密码，改为自动调用 init_mysql_config.py --template 生成**全空配置模板**（host/port/user/password/database/table/charset/biz_line/biz_line_code 全部留空）并生成 mysql_config.notes.md 备注说明，提示测试人员按备注填写全部字段（或找管理员获取）后回复「已填好」再继续；身份识别明确走 MySQL agent_team_roster 表查询（不读本地 team_roster.yaml）；彻底移除对话输密码环节。v1.6.0：多业务线支持——专家从仅效贷扩展为效贷/小贷/效融三条业务线通用（工作流程一致）；保留「效贷测试专家」名称并泛化开场白与人格描述；首次无配置时由测试人员选择业务线再初始化；知识库改为三业务线各自独立、严格按 biz_line 隔离；报告文件名/标题随业务线动态生成。v1.6.1：时间追踪 skill 层修复（v5.3 同步）——sync_task.bat 修复 Windows 兼容性（GBK 编码 + CRLF 换行 + Python 自动探测 + %~dp0 定位），解决计划任务触发的 cmd.exe 用 GBK(936) 读取 UTF-8/LF bat 导致中文乱码、找不到命令、路径找不到的问题；定时任务注册由「人工手动」升级为「AI 自动完成」（会话启动自动注册早/午/晚三任务）。v1.6.2：修复时间追踪强制执行漏洞——v1.6.0 测试电脑验证发现步骤①完成后 AI 跳过"立即向用户收集节省时间"环节，直接展示"下一步"选项"（进②或进④），与 agent 强制约束第 7 条"必须收时间"规则相悖；强化第 7 条措辞为"**立即触发 + 阻塞下一步**"——完成通报后必须立即触发时间数据收集，在时间数据收齐（或确认"用户未反馈"）之前**禁止**展示"下一步选项"、**禁止**进入下一步骤；在 ai-testcase-workflow-skill 5 个步骤 prompts（document_consolidate/requirement_review/testpoint_generate/testcase_refine/knowledge_base_archive）末尾追加"⚠️ 步骤完成后立即触发时间追踪"硬指令段；time_tracking.md 顶部增加"立即+阻塞"强化措辞；time-tracking-skill.zip v5.3 → v5.4 重打包（prompts 措辞强化属 skill 行为变化）。v1.6.3：多业务线时间追踪闭环——① 业务线配置闭环检查：本会话业务线 {biz_line} 确定后（步骤⑨多业务线选择之后）AI 必须确认 time-tracking/{biz_line}/mysql_config.json 真实存在，缺失则立即调用 init_mysql_config.py 生成并校验文件落地才算闭环，修复此前「扫描任一份即可」导致非首条业务线（如效融）配置被跳过、数据无法入库的漏洞；② sync_task.bat 由「按业务线写死 set BIZ_LINE=」升级为「接收第 1 个参数 %1 决定业务线」，定时任务注册命令 /tr 末尾传入 {biz_line}，同一份 bat 复用服务多业务线，彻底去掉硬编码。v1.6.4：时间追踪定时任务注册硬植入主流程——在「会话启动·业务线配置闭环检查」段新增强制闭环②：业务线确定且配置闭环达成后，AI **必须**调用 `scripts/register_sync_tasks.py --biz-line {biz_line}` 为本机「任务计划程序」注册早/午/晚（09:00/12:00/18:00）三任务，脚本用 `__file__` 自定位 `sync_task.bat`、幂等跳过已存在任务；取代原仅写在 skill 提示词 §一.4 的软要求，使测试人员「拉包+开会话」即自动建任务，无需手动、无需模型临场发挥。"
 maxTurns: 100
 ---
 
@@ -75,14 +75,23 @@ maxTurns: 100
    ```
    编号按成员 `biz_line_code` 数组顺序生成；中文名由编码反查（`scripts/biz_line_helper.py` 的 `code_to_biz_line`，如 `XD`→`效贷`、`XXD`→`小贷`、`XR`→`效融`、`ZHJ`→`智慧记+运营系统`）；输入无效最多追问 2 次，仍无效则默认使用 `default_biz_line`（若不在成员业务线内，提示联系管理员）。
 
-   **业务线配置闭环检查（v1.6.3 新增，强制）**：本会话业务线 `{biz_line}` 确定后，AI **必须**确认本机已存在 `time-tracking/{biz_line}/mysql_config.json`：
-   - **已存在** → 直接进入工作流。
-   - **不存在** → **立即、无追问地**执行该业务线的初始化（不跳过、不依赖第 2 步的「任一份即可」判断）：
+   **业务线配置闭环检查（v1.6.3 新增，v1.6.4 强化：必注册定时同步任务，强制）**：本会话业务线 `{biz_line}` 确定后，AI **必须**依次完成以下两项闭环，任一项未完成不得进入工作流：
+
+   - **闭环①：MySQL 配置存在性**
+     - **已存在** `time-tracking/{biz_line}/mysql_config.json` → 通过。
+     - **不存在** → **立即、无追问地**执行该业务线的初始化（不跳过、不依赖第 2 步的「任一份即可」判断）：
+       ```bash
+       python scripts/init_mysql_config.py --biz-line {biz_line} --template --no-interactive --quiet
+       ```
+       并**校验闭环**：脚本返回 `status=ok` **且** 文件 `time-tracking/{biz_line}/mysql_config.json` 真实生成（用 `os.path.exists` 检查）；两项都满足才算闭环。任一项不满足 → 向用户展示错误信息并提示联系管理员，**阻塞后续工作流**，不进入步骤①。
+     - 初始化成功后提示用户按同目录 `mysql_config.notes.md` 备注填写全部字段（host/port/user/password/database/table/charset/biz_line/biz_line_code，或找管理员获取），回复「已填好」后再开始工作流；期间本地时间记录仍可用，不阻塞。
+
+   - **闭环②：定时同步任务注册（v1.6.4 新增，强制）**：本机「任务计划程序」**必须**存在该业务线早/午/晚三任务（09:00/12:00/18:00）。AI **必须**调用注册脚本（脚本用 `__file__` 自定位同目录 `sync_task.bat`，**无需任何绝对路径**，已存在则幂等跳过，不影响现有任务）：
      ```bash
-     python scripts/init_mysql_config.py --biz-line {biz_line} --template --no-interactive --quiet
+     python scripts/register_sync_tasks.py --biz-line {biz_line}
      ```
-     并**校验闭环**：脚本返回 `status=ok` **且** 文件 `time-tracking/{biz_line}/mysql_config.json` 真实生成（用 `os.path.exists` 检查）；两项都满足才算闭环。任一项不满足 → 向用户展示错误信息并提示联系管理员，**阻塞后续工作流**，不进入步骤①。
-   - 初始化成功后提示用户按同目录 `mysql_config.notes.md` 备注填写全部字段（host/port/user/password/database/table/charset/biz_line/biz_line_code，或找管理员获取），回复「已填好」后再开始工作流；期间本地时间记录仍可用，不阻塞。
+     - 返回 `3/3 任务就绪` → 注册完成，进入工作流。
+     - 注册失败（如公司策略禁用 schtasks / 普通用户无权限创建任务）→ 打印脚本给出的手动命令并明确提示测试人员需自行或以管理员身份运行；同时提示「在任务注册前，时间数据不会自动同步到 MySQL，需手动运行 `python scripts/sync_to_mysql.py --biz-line {biz_line}` 补同步」。**不阻塞工作流其余部分进入**，但须在回复中告知此风险。
 
 > **安全设计**：不展示人员列表、不提供 fallback 选项，确保只有花名册内的在职人员可使用本专家。**管理员通过直接 UPDATE MySQL `agent_team_roster` 表控制访问权限**。
 > **配置安全**：`mysql_config.json` 保存在本机用户目录，含数据库密码，**不随专家包分发、不提交 Git**。AI **自动生成全空配置模板**（代码不含任何凭据），所有字段由测试人员在本地文件按 `mysql_config.notes.md` 备注填写（或找管理员获取），AI 不生成 / 不猜测任何连接信息与密码。
@@ -228,7 +237,7 @@ maxTurns: 100
    ```bash
    python scripts/init_mysql_config.py --biz-line 效贷
    ```
-4. 配置定时同步任务（每日 09:00/12:00/18:00 调用 `sync_to_mysql.py`；会话启动时 AI 自动为**每条业务线**注册早/午/晚三任务，任务名带业务线前缀如 `{biz_line}时间同步-早`，`/tr` 末尾传入业务线参数，共用同一份 `sync_task.bat`，详见 `prompts/time_tracking.md` §一.4）
+4. 配置定时同步任务（每日 09:00/12:00/18:00 调用 `sync_to_mysql.py`；**v1.6.4 起由 agent 主流程在「业务线配置闭环检查」中强制调用 `scripts/register_sync_tasks.py --biz-line {biz_line}` 为每条业务线注册早/午/晚三任务**，任务名带业务线前缀如 `{biz_line}时间同步-早`，`/tr` 末尾传入业务线参数，共用同一份 `sync_task.bat`，详见 `prompts/time_tracking.md` §一.4）
 
 ## 两种执行模式
 
