@@ -1,4 +1,4 @@
-# 时间节省追踪规则（v5.7 — 强制反馈 + 二次确认 + 参考时间 + MySQL 共享数据库同步 + AI 自动初始化 + 定时任务自动注册 + 花名册实时查 MySQL + **立即触发+阻塞下一步** + 智能体执行耗时采集 | 通用多业务线版）
+# 时间节省追踪规则（v5.8 — 强制反馈 + 二次确认 + 参考时间 + MySQL 共享数据库同步 + AI 自动初始化 + 定时任务自动注册 + 花名册实时查 MySQL + **立即触发+阻塞下一步** + 智能体执行耗时采集 + 定时任务注册去占位符(register_sync_tasks.py) | 通用多业务线版）
 
 > **⛔ v5.5 核心强化（强制 + 立即 + 阻塞，不可绕过）**：
 > 步骤 ①②④⑥⑦ **每一步产出文件交付给用户后**，**必须**按以下固定顺序执行，**顺序不可调换、不可跳过、不可合并**：
@@ -161,28 +161,21 @@
 > AI **自动生成全空配置模板**（全部字段留空，并生成 `mysql_config.notes.md` 备注说明），**不在对话中索要密码**，
 > 由测试人员在本地文件中按备注填写全部字段后回复「已填好」继续；AI 不会自行生成或猜测任何凭据。
 
-### 4. 定时任务自动注册（v5.3 起 AI 自动完成）
+### 4. 定时任务自动注册（v5.8 起由 register_sync_tasks.py 确定性注册，彻底去除占位符）
 
-MySQL 配置就绪后，AI **自动检查并注册**本机「定时同步」计划任务（Windows 任务计划程序），
-**无需测试人员手动打开 CMD**：
+业务线确定后（**无需等 MySQL 配置就绪**），AI **自动调用注册脚本**，在本机「任务计划程序」建好三个每日任务（已存在自动跳过，幂等）：
 
-1. 检查是否已注册（任一时间点任务存在即可）：
-   ```bash
-   schtasks /query /tn "{biz_line}时间同步-午" 2>&1
-   ```
-2. **不存在** → AI 自动注册早/午/晚三个每日任务（`<scripts目录>` 换成实际绝对路径；`/tr` 末尾必须传入 `{biz_line}` 参数，让同一份 `sync_task.bat` 按业务线推同一张 MySQL 表，用 `biz_line` 字段区分）：
-   ```bat
-   schtasks /create /tn "{biz_line}时间同步-早" /tr "<scripts目录>\sync_task.bat {biz_line}" /sc daily /st 09:00 /f
-   schtasks /create /tn "{biz_line}时间同步-午" /tr "<scripts目录>\sync_task.bat {biz_line}" /sc daily /st 12:00 /f
-   schtasks /create /tn "{biz_line}时间同步-晚" /tr "<scripts目录>\sync_task.bat {biz_line}" /sc daily /st 18:00 /f
-   ```
-3. **已存在** → 跳过，直接进入身份识别。
-4. **注册失败**（权限不足 / schtasks 被禁用）→ 提示测试人员以管理员身份运行注册命令（见 §6 第 2 步手动备选），不阻塞其余流程。
+```bash
+python scripts/register_sync_tasks.py --biz-line "{biz_line}"
+```
 
-> `sync_task.bat` 已内置 Python 自动探测 + 编码修复（GBK/CRLF），测试人员无需改任何配置；
-> 业务线由 bat 第 1 个参数 `%1` 决定（缺省默认主业务线），注册任务时通过 `/tr` 末尾的 `{biz_line}` 传入（见上方命令）。**多业务线不用再为每个业务线各做一份 bat** —— 同一份 bat 复用，仅任务名与参数不同。
+- 脚本用 `__file__` **自定位**同目录的 `sync_task.bat`，**不依赖任何路径参数、不需要模型去填每台机器不同的绝对路径**——这是 v5.8 相对 v5.3 的关键修复：v5.3 要求模型在提示词里内联拼 3 条带 `<scripts目录>` 占位符的 `schtasks` 命令，路径每台机器都不同、模型无法可靠填出，导致其他电脑 / 其他测试人员从未真正建出任务。
+- 脚本按 `{biz_line}` 注册 `早 / 午 / 晚`（09:00 / 12:00 / 18:00）三个任务，任务名带业务线前缀（`{biz_line}时间同步-早/午/晚`），多业务线互不冲突。
+- 已注册 → 跳过；未注册 → `schtasks /create`；注册失败（权限不足 / schtasks 被禁用）→ 打印明确原因与手动命令，不阻塞其余流程。
+- 注册时机提前到「业务线确定后」：即便 MySQL 配置尚未填写，任务也会先建好；配置补齐后定时任务自然开始同步，无需二次注册。
 
-> **v5.5 变更（多业务线支持）**：`sync_task.bat` 由「按业务线写死 `set BIZ_LINE=`」升级为「接收第 1 个参数 `%1` 决定业务线」，定时任务注册命令的 `/tr` 末尾传入 `{biz_line}`，解决多业务线（效贷/小贷/效融/智慧记各子线）需各自维护一份 bat 的问题。
+> `sync_task.bat` 已内置 Python 自动探测 + GBK/CRLF 编码修复，测试人员无需改任何配置；
+> 业务线由 bat 第 1 个参数 `%1` 决定，注册脚本通过 `/tr` 末尾传入 `{biz_line}`。**多业务线不用再各做一份 bat** —— 同一份 bat 复用，仅任务名与参数不同。
 
 ---
 
@@ -515,22 +508,28 @@ python scripts/generate_time_analytics.py --biz-line "{biz_line}" --format csv
 >
 > 此步骤只需执行一次。更换电脑需重新运行。
 
-### 第 2 步：注册定时任务（v5.3 起 AI 自动完成，手动方式仅作备选）
+### 第 2 步：注册定时任务（v5.8 起 AI 自动完成，手动方式仅作备选）
 
-> **正常情况下由 AI 自动完成**（会话启动检测到未注册 → 自动 `schtasks /create` 注册早/午/晚三任务，见 §一第 4 点）。
+> **正常情况下由 AI 自动完成**（业务线确定后调用 `python scripts/register_sync_tasks.py --biz-line {biz_line}`，见 §一第 4 点；脚本自定位 sync_task.bat，无需填路径）。
 > 以下为手动备选方式，仅在 AI 无法自动完成（如权限不足）或管理员排查时使用：
 
-以管理员身份打开 CMD，执行（把 `<scripts目录>` 换成实际路径，任务名可带业务线标识）：
+**方式 A（推荐，脚本自定位，无需填路径）**。以管理员身份打开 CMD，切到本 skill 的 scripts 目录后执行：
 
 ```bat
-schtasks /create /tn "{biz_line}时间同步-早" /tr "<scripts目录>\sync_task.bat" /sc daily /st 09:00 /f
-schtasks /create /tn "{biz_line}时间同步-午" /tr "<scripts目录>\sync_task.bat" /sc daily /st 12:00 /f
-schtasks /create /tn "{biz_line}时间同步-晚" /tr "<scripts目录>\sync_task.bat" /sc daily /st 18:00 /f
+python register_sync_tasks.py --biz-line 效贷
+```
+
+**方式 B（纯 schtasks 手动）**。把 `<scripts目录>` 换成实际路径，bat 第 1 个参数传业务线：
+
+```bat
+schtasks /create /tn "效贷时间同步-早" /tr ""<scripts目录>\sync_task.bat" 效贷" /sc daily /st 09:00 /f
+schtasks /create /tn "效贷时间同步-午" /tr ""<scripts目录>\sync_task.bat" 效贷" /sc daily /st 12:00 /f
+schtasks /create /tn "效贷时间同步-晚" /tr ""<scripts目录>\sync_task.bat" 效贷" /sc daily /st 18:00 /f
 ```
 
 > `sync_task.bat` 已内置 Python 自动探测 + 编码修复（GBK/CRLF），无需改配置；
-> 业务线由 bat 内 `set BIZ_LINE=` 决定（部署时确认已改成你的业务线名称）。
-> 查看：`schtasks /query /tn "{biz_line}时间同步-午"`；删除：`schtasks /delete /tn "..." /f`。
+> 业务线由 bat 第 1 个参数 `%1` 决定（部署时通过 `/tr` 末尾传入，无需改 bat 内容）。
+> 查看：`schtasks /query /tn "效贷时间同步-午"`；删除：`schtasks /delete /tn "..." /f`。
 
 ### 第 3 步：手动同步 / 验证（可选）
 
